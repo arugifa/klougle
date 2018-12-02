@@ -1,0 +1,28 @@
+#cloud-config
+# vim: syntax=yaml
+hostname: klougle
+mounts:
+  - ["${data_device}", "${docker_dir}", "ext4", ""]
+rancher:
+  docker:
+    graph: ${docker_dir}
+    tls: true
+runcmd:
+  - "if ! (blkid | grep -q ${data_device}) ; then sudo mkfs.ext4 -L data ${data_device} ; fi"
+ssh_authorized_keys: ${ssh_keys}
+write_files:
+  - path: /etc/rc.local
+    permissions: "0755"
+    owner: root
+    content: |
+      #!/bin/bash
+
+      # Wait for Docker before trying to start services.
+      # FIXME(arugifa): Why is it hanging for 6 minutes? (12/2018)
+      # wait-for-docker
+
+      # Start services.
+      docker start miniflux
+
+      # Now that all services are running, start the reverse proxy.
+      docker start nginx
