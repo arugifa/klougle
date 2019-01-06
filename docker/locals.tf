@@ -18,14 +18,22 @@ locals {
 }
 
 
-# News Feed Aggregator (Miniflux)
-# ===============================
+# News Reader (Miniflux)
+# ======================
 
 locals {
   domain_news           = "news.${local.domain}"
 
   user_news             = "admin"
   default_password_news = "password"
+}
+
+
+# Task Management (Kanboard)
+# ==========================
+
+locals {
+  domain_tasks           = "tasks.${local.domain}"
 }
 
 

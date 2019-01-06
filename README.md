@@ -11,12 +11,14 @@ access to your very own secrets, then Kloügle is made for you!
 
 Currently, here is what you can expect to find in the very first version of Kloügle:
 
-- a **news** feed aggregator ([Miniflux](https://miniflux.app/)),
-  like [Google News](https://news.google.com/) or [Feedly](https://feedly.com/).
+- a **news** reader ([Miniflux](https://miniflux.app/)),
+  like [Google News](https://news.google.com/) or [Feedly](https://feedly.com/),
+- a personal **task management** board ([Kanboard](https://kanboard.org/)),
+  like [Trello](https://trello.com/).
 
-That's all? Yep, for now! 😀 The main focus of this first version was to build
-Kloügle's foundations. But the following services will be available in the
-next few months:
+That's all? Yep, for now! 😀 The main focus of this first version has been to
+build Kloügle's foundations. But the following services will be available
+during the next few months:
 
 - a **note-taking** application,
   like [Google Keep](https://keep.google.com/) or [Evernote](https://evernote.com/),
@@ -26,7 +28,6 @@ next few months:
 - a **webmail** with [PGP](https://en.wikipedia.org/wiki/Pretty_Good_Privacy) support,
   like [Google Mail](https://mail.google.com/) + [Mailvelope](https://www.mailvelope.com/),
 - a **contact** management tool, like [Google Contacts](https://contacts.google.com/),
-- a **personal project management** application, like [Trello](https://trello.com/),
 - a **URL shortener**, like [goo.gl](https://goo.gl/).
 
 It is not my goal to reinvent the wheel: by carefully selecting a set of
@@ -100,9 +101,10 @@ Every service deployed with Kloügle is running on its own sub-domain. Which
 means that, you not only have to buy a domain name, but also create address
 records for every Kloügle service.
 
-As only a news feed aggregator is available for now, it's pretty simple:
+As only a very few services are available for now, it's pretty simple:
 
 - `news.<YOUR_DOMAIN>`
+- `tasks.<YOUR_DOMAIN>`
 
 When deploying Kloügle online, **Terraform** will provide you the IP address of
 your Kloügle server. So you can update your DNS zone afterwards.
@@ -111,7 +113,7 @@ However, if you only want to play with Kloügle locally, then the simplest optio
 is to update the `/etc/hosts` file of your machine. For example:
 
 ```ini
-127.0.0.1    localhost news.localhost
+127.0.0.1    localhost news.localhost tasks.localhost
 ```
 
 
@@ -233,7 +235,8 @@ As Kloügle doesn't provide any central authentication system for the moment:
 
 Here are the default credentials configured for each service:
 
-- `news.<YOUR_DOMAIN>`: `admin` / `password`
+- **news reader:** `admin` / `password` (`news.<YOUR_DOMAIN>/settings`),
+- **task management:** `admin` / `admin` (`tasks.<YOUR_DOMAIN>/user/1/password`).
 
 
 ## Contributing

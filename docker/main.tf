@@ -26,7 +26,7 @@ resource "docker_image" "nginx" {
 }
 
 resource "docker_container" "nginx" {
-  image    = "${docker_image.nginx.name}"
+  image    = "${docker_image.nginx.latest}"
   name     = "nginx"
   start    = true
 
@@ -58,8 +58,8 @@ resource "docker_container" "nginx" {
 # Services
 # ========
 
-# News Feed Aggregator (Miniflux)
-# ===============================
+# News Reader (Miniflux)
+# ======================
 
 resource "docker_image" "miniflux" {
   name          = "${data.docker_registry_image.miniflux.name}"
@@ -67,7 +67,7 @@ resource "docker_image" "miniflux" {
 }
 
 resource "docker_container" "miniflux" {
-  image   = "${docker_image.miniflux.name}"
+  image   = "${docker_image.miniflux.latest}"
   name    = "miniflux"
   start   = true
 
@@ -94,6 +94,43 @@ resource "docker_container" "miniflux" {
   }
 }
 
+resource "docker_volume" "miniflux_data" {
+  name = "miniflux_data"
+}
+
+
+# Task Management (Kanboard)
+# ==========================
+
+resource "docker_image" "kanboard" {
+  name          = "${data.docker_registry_image.kanboard.name}"
+  pull_triggers = ["${data.docker_registry_image.kanboard.sha256_digest}"]
+}
+
+resource "docker_container" "kanboard" {
+  image   = "${docker_image.kanboard.latest}"
+  name    = "kanboard"
+  start   = true
+
+  env     = [
+    # Reverse Proxy
+    "VIRTUAL_HOST=${local.domain_tasks}",
+  ]
+
+  networks_advanced {
+    name = "${docker_network.internal_network.name}"
+  }
+
+  volumes {
+    volume_name    = "${docker_volume.kanboard_data.name}"
+    container_path = "/var/www/app/data"
+  }
+}
+
+resource "docker_volume" "kanboard_data" {
+  name = "kanboard_data"
+}
+
 
 # =========
 # Databases
@@ -108,12 +145,8 @@ resource "docker_image" "postgresql" {
 # Miniflux
 # ========
 
-resource "docker_volume" "miniflux_data" {
-  name = "miniflux_data"
-}
-
 resource "docker_container" "miniflux_db" {
-  image = "${docker_image.postgresql.name}"
+  image = "${docker_image.postgresql.latest}"
   name  = "${local.miniflux_db_host}"
   start = true
 

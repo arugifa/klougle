@@ -2,6 +2,10 @@
 # Docker Images
 # =============
 
+data "docker_registry_image" "kanboard" {
+  name = "kanboard/kanboard:v1.2.7"
+}
+
 data "docker_registry_image" "miniflux" {
   name = "miniflux/miniflux:2.0.13"
 }
