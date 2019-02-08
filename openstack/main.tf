@@ -12,24 +12,31 @@ resource "openstack_images_image_v2" "rancheros" {
   disk_format      = "qcow2"
 }
 
-
 # Virtual Machine Instance
 # ========================
 
 resource "openstack_compute_instance_v2" "server" {
   name            = "Kloügle Server"
   image_id        = "${openstack_images_image_v2.rancheros.id}"
-  flavor_id       = "${data.openstack_compute_flavor_v2.requirements.id}"
+  flavor_id       = "${data.openstack_compute_flavor_v2.flavor.id}"
   security_groups = ["${openstack_networking_secgroup_v2.firewall.name}"]
 
   config_drive    = true
   user_data       = "${data.template_file.cloud_init.rendered}"
 
   network {
-    name = "${var.private_network}"
+    # If the provider doesn't allow to directly connect to the external
+    # network, then we have to connect to an internal network instead, and use
+    # a floating IP.
+    uuid = "${var.floating_ip_pool != "" ? "${element(concat(data.openstack_networking_network_v2.internal_network.*.id, list("")), 0)}" : "${element(concat(data.openstack_networking_network_v2.external_network.*.id, list("")), 0)}"}"
+
+    # Thanks to https://github.com/hashicorp/terraform/issues/11210
+
+    # For an unknown reason, attaching the server to an internal network with
+    # openstack_compute_interface_attach_v2 creates a virtual machine with two
+    # private addresses. Hence, it has to be done here instead.
   }
 }
-
 
 # Persistent Data Volume
 # ======================
@@ -50,22 +57,23 @@ resource "openstack_compute_volume_attach_v2" "data" {
 # Networking
 # ==========
 
-# Public IP
-# =========
+# Floating IP
+# ===========
+
+# We only need a floating IP if the provider doesn't allow to connect directly
+# to the external network.
 
 resource "openstack_networking_floatingip_v2" "public_ip" {
-  pool    = "${var.public_network}"
+  count   = "${var.floating_ip_pool != "" ? 1 : 0}"
+  pool    = "${data.openstack_networking_network_v2.floating_ip_pool.name}"
 }
 
 resource "openstack_compute_floatingip_associate_v2" "public_ip" {
+  count       = "${var.floating_ip_pool != "" ? 1 : 0}"
+
   floating_ip = "${openstack_networking_floatingip_v2.public_ip.address}"
   instance_id = "${openstack_compute_instance_v2.server.id}"
-
-  provisioner "local-exec" {
-    command = "${data.template_file.update_ssh_known_hosts.rendered}"
-  }
 }
-
 
 # Firewall
 # ========
@@ -104,13 +112,23 @@ resource "openstack_networking_secgroup_rule_v2" "ssh" {
   security_group_id = "${openstack_networking_secgroup_v2.firewall.id}"
 }
 
+# SSH and Docker TLS Configuration
+# ================================
 
-# Docker TLS Certificates
-# =======================
+resource "null_resource" "ssh_config" {
+  triggers {
+    server_id = "${openstack_compute_instance_v2.server.id}"
+    public_ip = "${local.public_ip}"
+  }
+
+  provisioner "local-exec" {
+    command = "${data.template_file.update_ssh_known_hosts.rendered}"
+  }
+}
 
 resource "null_resource" "docker_tls" {
   triggers {
-    public_ip = "${openstack_compute_instance_v2.server.id}"
+    server_id = "${openstack_compute_instance_v2.server.id}"
   }
 
   provisioner "remote-exec" {

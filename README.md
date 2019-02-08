@@ -135,7 +135,7 @@ cd klougle/
 
 When deploying Kloügle locally, you also need to have **Docker** installed.
 For Linux systems, please refer to the documentation of your distribution.
-For macOS, with **Homebrew**, you can just type: `brew cask install docker`.
+For macOS, with **Homebrew**, you can just type: `brew cask install docker`
 
 Then, deploy Kloügle services with **Terraform**:
 
@@ -175,7 +175,7 @@ When deployed in the cloud, Kloügle is running inside a virtual machine on
 
 Each cloud provider has different requirements. But for all of them, you will
 have to choose a **F**ully **Q**ualified **D**omain **N**ame for your virtual machine.
-For example: `cloud.<YOUR_DOMAIN`.
+For example: `cloud.<YOUR_DOMAIN>`
 
 Then, after Kloügle deployment, connecting to your Kloügle server will be as easy as:
 
@@ -184,22 +184,42 @@ ssh rancher@<SERVER_FQDN>
 ```
 
 Only [OpenStack](https://www.openstack.org/) providers are supported for now.
-The reason is very simple: I am currently the only user of Kloügle, and I work
-in a company operating an **OpenStack** cloud 🤠
+The reason is very simple: I am currently the only user of Kloügle, and worked
+in the past for a company operating an OpenStack cloud 🤠
 
 
 ##### OpenStack
 
-Requirements:
+**Requirements:**
 
 - your **OpenStack RC file**, that you can download from the OpenStack dashboard,
-- a pre-defined **private network**, because Kloügle doesn't want to
-  mess-up with your network topology,
-- a **public network** made available by your provider, from which Kloügle
-  will get a floating IP,
+- the **flavor** name you want to use for the server: 1 vCPU and 2048 MB of RAM
+  are largely enough,
 - all the **key pairs** you want to use to connect to the Kloügle virtual machine:
   the pair associated to the machine where you are running **Terraform** is the
   most important one, of course.
+
+Regarding the network configuration, many scenarios exist.
+
+<a href="http://media.figura.live/klougle/openstack/topology_floating_ip.png">
+    <img alt="Kloügle server with floating IP" width="400" src="http://media.figura.live/klougle/openstack/topology_floating_ip.png">
+</a>
+
+If your provider lets you accessing to your virtual machines from Internet via
+floating IPs, then you have to manually create:
+
+- an **internal network**, to which Kloügle server will connect,
+- a **router**, acting as a gateway to the external network (made available by
+  your provider).
+
+<a href="http://media.figura.live/klougle/openstack/topology_external_interface.png">
+    <img alt="Kloügle server with external interface" width="400" src="http://media.figura.live/klougle/openstack/topology_external_interface.png">
+</a>
+
+If your provider allows you instead to attach an interface directly to the
+external network, then you don't have anything to do! 🙂
+
+**Deployment:**
 
 ```sh
 # First, set-up your OpenStack and SSH environment.
@@ -209,7 +229,12 @@ ssh-add
 # Then, deploy your Kloügle server.
 cd openstack/
 terraform init
-terraform apply -var 'key_pairs=["<KEY_PAIR_1>","<KEY_PAIR_2>"]' -var 'public_network=<FLOATING_IP_POOL>' -var 'private_network=<PRIVATE_NETWORK>' -var 'fqdn=<SERVER_FQDN>'
+
+# If you use a floating IP pool:
+terraform apply -var 'flavor=<FLAVOR_NAME>' -var 'key_pairs=["<PAIR_1>","<PAIR_2>"]' -var 'fqdn=<SERVER_FQDN>' -var 'floating_ip_pool=<POOL_NAME>' -var 'internal_network=<NETWORK_NAME>'
+
+# If you can instead directly connect to the external network:
+terraform apply -var 'flavor=<FLAVOR_NAME>' -var 'key_pairs=["<PAIR_1>","<PAIR_2>"]' -var 'fqdn=<SERVER_FQDN>' -var 'external_network=<NETWORK_NAME>'
 
 # Wait a couple of minutes for the server to be up and running, and copy the public IP
 # displayed by Terraform. You can now manually assign it to the server FQDN,
@@ -235,8 +260,8 @@ As Kloügle doesn't provide any central authentication system for the moment:
 
 Here are the default credentials configured for each service:
 
-- **news reader:** `admin` / `password` (`news.<YOUR_DOMAIN>/settings`),
-- **task management:** `admin` / `admin` (`tasks.<YOUR_DOMAIN>/user/1/password`).
+- **news reader:** `admin` / `password` (`http://news.<YOUR_DOMAIN>/settings`)
+- **task management:** `admin` / `admin` (`http://tasks.<YOUR_DOMAIN>/user/1/password`)
 
 
 ## Contributing

@@ -8,7 +8,8 @@ rancher:
     graph: ${docker_dir}
     tls: true
 runcmd:
-  - "if ! (blkid | grep -q ${data_device}) ; then sudo mkfs.ext4 -L data ${data_device} ; fi"
+  # Format persistent volume to store Docker data, when the server is created.
+  - "if ! (blkid | grep -q ${data_device}) ; then sudo mkfs.ext4 -L data ${data_device} && sudo mount ${data_device} ${docker_dir} ; fi"
 ssh_authorized_keys: ${ssh_keys}
 write_files:
   - path: /etc/rc.local
