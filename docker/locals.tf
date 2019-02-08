@@ -17,7 +17,6 @@ locals {
   domain = "${replace(var.host, "/(\\w+\\.)(\\w+\\.)(\\w+)/", "$2$3")}"
 }
 
-
 # News Reader (Miniflux)
 # ======================
 
@@ -27,7 +26,6 @@ locals {
   user_news             = "admin"
   default_password_news = "password"
 }
-
 
 # Task Management (Kanboard)
 # ==========================

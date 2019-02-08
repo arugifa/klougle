@@ -16,7 +16,6 @@ resource "docker_network" "internal_network" {
   name     = "internal_network"
 }
 
-
 # Reverse Proxy
 # =============
 
@@ -98,7 +97,6 @@ resource "docker_volume" "miniflux_data" {
   name = "miniflux_data"
 }
 
-
 # Task Management (Kanboard)
 # ==========================
 
@@ -140,7 +138,6 @@ resource "docker_image" "postgresql" {
   name          = "${data.docker_registry_image.postgresql.name}"
   pull_triggers = ["${data.docker_registry_image.postgresql.sha256_digest}"]
 }
-
 
 # Miniflux
 # ========
