@@ -9,16 +9,16 @@ access to your very own secrets, then Kloügle is made for you!
 
 ## Overview
 
-Currently, here is what you can expect to find in the very first version of Kloügle:
+Currently, here is what you can expect to find in Kloügle:
 
 - a **news** reader ([Miniflux](https://miniflux.app/)),
   like [Google News](https://news.google.com/) or [Feedly](https://feedly.com/),
 - a personal **task management** board ([Kanboard](https://kanboard.org/)),
   like [Trello](https://trello.com/).
 
-That's all? Yep, for now! 😀 The main focus of this first version has been to
-build Kloügle's foundations. But the following services will be available
-during the next few months:
+That's all? Yep, for now! 😀 The main focus has been to build Kloügle's
+foundations so far. But the following services will be available during the
+next few months:
 
 - a **note-taking** application,
   like [Google Keep](https://keep.google.com/) or [Evernote](https://evernote.com/),
@@ -67,6 +67,9 @@ Cloud solution™.
 Kloügle depends on [Terraform](https://www.terraform.io/) to set-up your server.
 This great tool makes possible to deploy Kloügle in many different environments.
 
+**Warning: Kloügle is currently [not compatible](https://github.com/arugifa/klougle/issues/15)
+with the latest version of Terraform (0.12), which introduced many major changes**
+
 
 ##### On Linux
 
@@ -75,8 +78,8 @@ If it's your case, you have to install it manually:
 
 ```sh
 # First, download Terraform.
-wget https://releases.hashicorp.com/terraform/0.11.10/terraform_0.11.10_linux_amd64.zip
-unzip terraform_0.11.10_linux_amd64.zip -d /tmp
+wget https://releases.hashicorp.com/terraform/0.11.14/terraform_0.11.14_linux_amd64.zip
+unzip terraform_0.11.14_linux_amd64.zip -d /tmp
 
 # Then, install Terraform on your system.
 sudo mv /tmp/terraform /usr/local/bin/
@@ -85,14 +88,17 @@ sudo mv /tmp/terraform /usr/local/bin/
 
 ##### On macOS
 
-Lucky you: if you already use [Homebrew](https://brew.sh/) to manage your packages,
-then just type:
+You cannot use [Homebrew](https://brew.sh/), as you need to install an older
+version of Terraform (0.11):
 
 ```sh
-brew install terraform
-```
+# First, download Terraform.
+wget https://releases.hashicorp.com/terraform/0.11.14/terraform_0.11.14_darwin_amd64.zip
+unzip terraform_0.11.14_darwin_amd64.zip -d /tmp
 
-If you don't use Homebew yet, well... you really should 😋
+# Then, install Terraform on your system.
+sudo mv /tmp/terraform /usr/local/bin/
+```
 
 
 #### DNS Records
