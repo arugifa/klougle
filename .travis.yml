@@ -6,15 +6,42 @@ jobs:
       services:
         - docker
 
-      install:
-        - wget https://releases.hashicorp.com/terraform/0.11.14/terraform_0.11.14_linux_amd64.zip
-        - unzip terraform_0.11.14_linux_amd64.zip -d /tmp
-        - sudo mv /tmp/terraform /usr/local/bin/
-
       script:
         - docker/tests.sh
 
       addons:
         hosts:
+          # Update /etc/hosts to resolve service domains to 127.0.0.1
           - news.localhost
           - tasks.localhost
+
+    - stage: test
+      name: OpenStack
+
+      env:
+        - TF_VAR_key_pairs='["travis-ci"]'
+
+      before_install:
+        # See https://github.com/pypa/pip/issues/5247
+        - pip install python-openstackclient==3.18.0
+
+      before_script:
+        - ssh-keygen -t rsa -f ~/.ssh/id_rsa -N ""
+        - openstack keypair create --public-key ~/.ssh/id_rsa.pub travis-ci
+        - eval "$(ssh-agent -s)"
+        - ssh-add ~/.ssh/id_rsa
+
+      script:
+        - openstack/tests.sh
+
+      after_script:
+        - openstack/cleanup.sh
+
+install:
+  - wget https://releases.hashicorp.com/terraform/0.11.14/terraform_0.11.14_linux_amd64.zip
+  - unzip terraform_0.11.14_linux_amd64.zip -d /tmp
+  - sudo mv /tmp/terraform /usr/local/bin/
+
+
+# Use Python by default, to install the OpenStack client with Pip.
+language: python

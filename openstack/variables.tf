@@ -21,6 +21,7 @@ variable "key_pairs" {
 
 variable "fqdn" {
   description = "Server's FQDN. Used to generate Docker TLS certificates."
+  default     = ""
 }
 
 # OpenStack

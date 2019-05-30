@@ -68,7 +68,9 @@ data "template_file" "setup_docker_tls" {
   template = "${file("${path.module}/templates/scripts/setup_docker_tls.sh")}"
 
   vars {
-    fqdn = "${var.fqdn}"
+    # Use the server's public IP during testing,
+    # as we cannot dynamically update DNS records.
+    fqdn = "${var.fqdn != "" ? "${var.fqdn}" : "${local.public_ip}"}"
   }
 }
 
