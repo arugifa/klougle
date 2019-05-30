@@ -1,5 +1,7 @@
 # Kloügle - Freedom from the Cloud
 
+[![Build Status](https://travis-ci.org/arugifa/klougle.svg?branch=master)](https://travis-ci.org/arugifa/klougle)
+
 **Kloügle** offers you to host, on your own server, a range of services
 traditionally provided by web companies like **Google**.
 
