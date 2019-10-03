@@ -21,17 +21,31 @@ locals {
 # ======================
 
 locals {
-  domain_news           = "news.${local.domain}"
+  domain_news               = "news.${local.domain}"
 
-  user_news             = "admin"
-  default_password_news = "password"
+  version_miniflux          = "2.0.13"
+  default_user_miniflux     = "admin"
+  default_password_miniflux = "password"
+}
+
+# Notes Application (Standard Notes)
+# ==================================
+
+locals {
+  domain_notes_webui           = "notes.${local.domain}"
+  domain_notes_server          = "sync.${local.domain_notes_webui}"
+
+  version_standardnotes_web    = "3.0.14"
+  version_standardnotes_server = "0.0.0-rc.2019.08.02"
 }
 
 # Task Management (Kanboard)
 # ==========================
 
 locals {
-  domain_tasks           = "tasks.${local.domain}"
+  domain_tasks     = "tasks.${local.domain}"
+
+  version_kanboard = "v1.2.7"
 }
 
 
@@ -39,13 +53,23 @@ locals {
 # Database Configurations
 # =======================
 
+# Standard Notes
+# ==============
+
+locals {
+  db_name_standardnotes     = "standardnotes"
+  db_user_standardnotes     = "klougle"
+  db_password_standardnotes = "${random_string.standardnotes_db_password.result}"
+  db_host_standardnotes     = "standardnotes_db"
+}
+
 # Miniflux
 # ========
 
 locals {
-  miniflux_db_name     = "miniflux"
-  miniflux_db_user     = "klougle"
-  miniflux_db_password = "${random_string.miniflux_db_password.result}"
-  miniflux_db_host     = "miniflux_db"
-  miniflux_db_url      = "postgres://${local.miniflux_db_user}:${local.miniflux_db_password}@${local.miniflux_db_host}/${local.miniflux_db_name}?sslmode=disable"
+  db_name_miniflux     = "miniflux"
+  db_user_miniflux     = "klougle"
+  db_password_miniflux = "${random_string.miniflux_db_password.result}"
+  db_host_miniflux     = "miniflux_db"
+  db_url_miniflux      = "postgres://${local.db_user_miniflux}:${local.db_password_miniflux}@${local.db_host_miniflux}/${local.db_name_miniflux}?sslmode=disable"
 }

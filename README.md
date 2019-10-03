@@ -13,6 +13,8 @@ access to your very own secrets, then Kloügle is made for you!
 
 Currently, here is what you can expect to find in Kloügle:
 
+- a **note-taking** application ([Standard Notes](https://standardnotes.org/)),
+  like [Google Keep](https://keep.google.com/) or [Evernote](https://evernote.com/),
 - a **news** reader ([Miniflux](https://miniflux.app/)),
   like [Google News](https://news.google.com/) or [Feedly](https://feedly.com/),
 - a personal **task management** board ([Kanboard](https://kanboard.org/)),
@@ -22,8 +24,6 @@ That's all? Yep, for now! 😀 The main focus has been to build Kloügle's
 foundations so far. But the following services will be available during the
 next few months:
 
-- a **note-taking** application,
-  like [Google Keep](https://keep.google.com/) or [Evernote](https://evernote.com/),
 - a **file storage and synchronization** service,
   like [Google Drive](https://drive.google.com/) or [Dropbox](https://www.dropbox.com/),
 - a **calendar**, like [Google Calendar](https://calendar.google.com/),
@@ -82,6 +82,7 @@ If it's your case, you have to install it manually:
 # First, download Terraform.
 wget https://releases.hashicorp.com/terraform/0.11.14/terraform_0.11.14_linux_amd64.zip
 unzip terraform_0.11.14_linux_amd64.zip -d /tmp
+rm terraform_0.11.14_linux_amd64.zip
 
 # Then, install Terraform on your system.
 sudo mv /tmp/terraform /usr/local/bin/
@@ -95,8 +96,9 @@ version of Terraform (0.11):
 
 ```sh
 # First, download Terraform.
-wget https://releases.hashicorp.com/terraform/0.11.14/terraform_0.11.14_darwin_amd64.zip
+curl -O https://releases.hashicorp.com/terraform/0.11.14/terraform_0.11.14_darwin_amd64.zip
 unzip terraform_0.11.14_darwin_amd64.zip -d /tmp
+rm terraform_0.11.14_darwin_amd64.zip
 
 # Then, install Terraform on your system.
 sudo mv /tmp/terraform /usr/local/bin/
@@ -121,7 +123,7 @@ However, if you only want to play with Kloügle locally, then the simplest optio
 is to update the `/etc/hosts` file of your machine. For example:
 
 ```ini
-127.0.0.1    localhost news.localhost tasks.localhost
+127.0.0.1    news.localhost notes.localhost sync.notes.localhost tasks.localhost
 ```
 
 
@@ -259,14 +261,21 @@ terraform apply -var 'host=<SERVER_FQDN>'
 ## Configuring Kloügle
 
 The only mandatory action you have to perform after installing Kloügle is to
-change services' default passwords.
+change services' default passwords, or create new users manually.
 
 As Kloügle doesn't provide any central authentication system for the moment:
 
 - every time you want to change your password, you have to do it for all services,
 - there is no "Forgot Password" feature yet available, so keep your password(s) safe...
 
-Here are the default credentials configured for each service:
+For the following services, you have to create a new user by yourself:
+
+- **notes application:** `http://notes.<YOUR_DOMAIN>/` (please update the server's
+  URL when trying to register/sign in with `http://sync.notes.<YOUR_DOMAIN>/`;
+  by default, a fake one is used to prevent anyone to create accounts on your
+  setup)
+
+But for the following ones, here are the default credentials:
 
 - **news reader:** `admin` / `password` (`http://news.<YOUR_DOMAIN>/settings`)
 - **task management:** `admin` / `admin` (`http://tasks.<YOUR_DOMAIN>/user/1/password`)

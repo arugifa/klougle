@@ -1,17 +1,12 @@
-# =============
-# Docker Images
-# =============
+# =========================
+# Unversioned Docker Images
+# =========================
 
-data "docker_registry_image" "kanboard" {
-  name = "kanboard/kanboard:v1.2.7"
-}
-
-data "docker_registry_image" "miniflux" {
-  name = "miniflux/miniflux:2.0.13"
+data "docker_registry_image" "mysql" {
+  name = "mysql:5"
 }
 
 data "docker_registry_image" "nginx" {
-  # No proper version scheme available yet.
   name = "jwilder/nginx-proxy:latest"
 }
 

@@ -2,17 +2,6 @@
 
 set -e
 
-
-# Infrastructure Deployment
-# =========================
-
-terraform init docker/
-terraform apply -auto-approve docker/
-
-
-# Test Suite
-# ==========
-
 assert_service_is_online () {
     service=$1
     domain=$2
@@ -25,15 +14,15 @@ assert_service_is_online () {
     echo "Test ${service}:"
 
     for i in {1..10}; do
-        wget -O /dev/null $domain && break || if [[ "$i" != 10 ]]; then sleep 1 ; else exit 1 ; fi
+        curl -o /dev/null -L -# $domain && break || if [[ "$i" != 10 ]]; then sleep 1 ; else exit 1 ; fi
     done
 }
 
 assert_service_is_online "News Reader"           "news.localhost"
+
+# TODO: Test communication between
+#       Standard Notes Web UI and default server (10/2019)
+assert_service_is_online "Notes Web UI"          "notes.localhost"
+assert_service_is_online "Notes Server"          "sync.notes.localhost"
+
 assert_service_is_online "Task Management Board" "tasks.localhost"
-
-
-# Infrastructure Destruction
-# ==========================
-
-terraform destroy -auto-approve docker/
