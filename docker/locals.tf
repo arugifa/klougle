@@ -17,8 +17,17 @@ locals {
   domain = "${replace(var.host, "/(\\w+\\.)(\\w+\\.)(\\w+)/", "$2$3")}"
 }
 
-# News Reader (Miniflux)
-# ======================
+# Kanboard
+# ========
+
+locals {
+  domain_tasks     = "tasks.${local.domain}"
+
+  version_kanboard = "v1.2.7"
+}
+
+# Miniflux
+# ========
 
 locals {
   domain_news               = "news.${local.domain}"
@@ -28,8 +37,8 @@ locals {
   default_password_miniflux = "password"
 }
 
-# Notes Application (Standard Notes)
-# ==================================
+# Standard Notes
+# ==============
 
 locals {
   domain_notes_webui           = "notes.${local.domain}"
@@ -39,28 +48,20 @@ locals {
   version_standardnotes_server = "0.0.0-rc.2019.08.02"
 }
 
-# Task Management (Kanboard)
-# ==========================
-
-locals {
-  domain_tasks     = "tasks.${local.domain}"
-
-  version_kanboard = "v1.2.7"
-}
-
 
 # =======================
 # Database Configurations
 # =======================
 
-# Standard Notes
-# ==============
+# Kanboard
+# ========
 
 locals {
-  db_name_standardnotes     = "standardnotes"
-  db_user_standardnotes     = "klougle"
-  db_password_standardnotes = "${random_string.standardnotes_db_password.result}"
-  db_host_standardnotes     = "standardnotes_db"
+  db_name_kanboard     = "kanboard"
+  db_user_kanboard     = "klougle"
+  db_password_kanboard = "${random_string.kanboard_db_password.result}"
+  db_host_kanboard     = "kanboard_db"
+  db_url_kanboard      = "postgres://${local.db_user_kanboard}:${local.db_password_kanboard}@${local.db_host_kanboard}/${local.db_name_kanboard}"
 }
 
 # Miniflux
@@ -72,4 +73,14 @@ locals {
   db_password_miniflux = "${random_string.miniflux_db_password.result}"
   db_host_miniflux     = "miniflux_db"
   db_url_miniflux      = "postgres://${local.db_user_miniflux}:${local.db_password_miniflux}@${local.db_host_miniflux}/${local.db_name_miniflux}?sslmode=disable"
+}
+
+# Standard Notes
+# ==============
+
+locals {
+  db_name_standardnotes     = "standardnotes"
+  db_user_standardnotes     = "klougle"
+  db_password_standardnotes = "${random_string.standardnotes_db_password.result}"
+  db_host_standardnotes     = "standardnotes_db"
 }

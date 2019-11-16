@@ -57,8 +57,42 @@ resource "docker_container" "nginx" {
 # Services
 # ========
 
-# News Reader (Miniflux)
-# ======================
+# Kanboard
+# ========
+
+resource "docker_image" "kanboard" {
+  name          = "kanboard/kanboard:${local.version_kanboard}"
+}
+
+resource "docker_container" "kanboard" {
+  image   = "${docker_image.kanboard.latest}"
+  name    = "kanboard"
+  start   = true
+
+  env = [
+    # Reverse Proxy
+    "VIRTUAL_HOST=${local.domain_tasks}",
+
+    # Kanboard Database
+    "DATABASE_URL=${local.db_url_kanboard}",
+  ]
+
+  networks_advanced {
+    name = "${docker_network.internal_network.name}"
+  }
+
+  volumes {
+    volume_name    = "${docker_volume.kanboard_data.name}"
+    container_path = "/var/www/app/data"
+  }
+}
+
+resource "docker_volume" "kanboard_data" {
+  name = "kanboard_data"
+}
+
+# Miniflux
+# ========
 
 resource "docker_image" "miniflux" {
   name          = "miniflux/miniflux:${local.version_miniflux}"
@@ -92,12 +126,8 @@ resource "docker_container" "miniflux" {
   }
 }
 
-resource "docker_volume" "miniflux_data" {
-  name = "miniflux_data"
-}
-
-# Notes Application (Standard Notes)
-# ==================================
+# Standard Notes
+# ==============
 
 resource "docker_image" "standardnotes_web" {
   name          = "arugifa/standardnotes-web:${local.version_standardnotes_web}"
@@ -162,46 +192,11 @@ resource "docker_container" "standardnotes_server" {
   }
 }
 
-resource "docker_volume" "standardnotes_data" {
-  name = "standardnotes_data"
-}
-
 resource "random_string" "standardnotes_secret_key" {
   length  = 16
 
   # Special characters make Rails to break down.
   special = false
-}
-
-# Task Management (Kanboard)
-# ==========================
-
-resource "docker_image" "kanboard" {
-  name          = "kanboard/kanboard:${local.version_kanboard}"
-}
-
-resource "docker_container" "kanboard" {
-  image   = "${docker_image.kanboard.latest}"
-  name    = "kanboard"
-  start   = true
-
-  env = [
-    # Reverse Proxy
-    "VIRTUAL_HOST=${local.domain_tasks}",
-  ]
-
-  networks_advanced {
-    name = "${docker_network.internal_network.name}"
-  }
-
-  volumes {
-    volume_name    = "${docker_volume.kanboard_data.name}"
-    container_path = "/var/www/app/data"
-  }
-}
-
-resource "docker_volume" "kanboard_data" {
-  name = "kanboard_data"
 }
 
 
@@ -217,6 +212,39 @@ resource "docker_image" "mysql" {
 resource "docker_image" "postgresql" {
   name          = "${data.docker_registry_image.postgresql.name}"
   pull_triggers = ["${data.docker_registry_image.postgresql.sha256_digest}"]
+}
+
+# Kanboard
+# ========
+
+resource "docker_container" "kanboard_db" {
+  image = "${docker_image.postgresql.latest}"
+  name  = "${local.db_host_kanboard}"
+  start = true
+
+  env = [
+    "POSTGRES_DB=${local.db_name_kanboard}",
+    "POSTGRES_USER=${local.db_user_kanboard}",
+    "POSTGRES_PASSWORD=${local.db_password_kanboard}",
+  ]
+
+  networks_advanced {
+    name = "${docker_network.internal_network.name}"
+  }
+
+  volumes {
+    volume_name    = "${docker_volume.kanboard_db.name}"
+    container_path = "/var/lib/postgresql/data"
+  }
+}
+
+resource "docker_volume" "kanboard_db" {
+  name = "kanboard_db"
+}
+
+resource "random_string" "kanboard_db_password" {
+  length = 8
+  special = false
 }
 
 # Miniflux
@@ -241,6 +269,10 @@ resource "docker_container" "miniflux_db" {
     volume_name    = "${docker_volume.miniflux_data.name}"
     container_path = "/var/lib/postgresql/data"
   }
+}
+
+resource "docker_volume" "miniflux_data" {
+  name = "miniflux_data"
 }
 
 resource "random_string" "miniflux_db_password" {
@@ -275,6 +307,10 @@ resource "docker_container" "standardnotes_db" {
     volume_name    = "${docker_volume.standardnotes_data.name}"
     container_path = "/var/lib/mysql"
   }
+}
+
+resource "docker_volume" "standardnotes_data" {
+  name = "standardnotes_data"
 }
 
 resource "random_string" "standardnotes_db_password" {
