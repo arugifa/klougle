@@ -266,13 +266,13 @@ resource "docker_container" "miniflux_db" {
   }
 
   volumes {
-    volume_name    = "${docker_volume.miniflux_data.name}"
+    volume_name    = "${docker_volume.miniflux_db.name}"
     container_path = "/var/lib/postgresql/data"
   }
 }
 
-resource "docker_volume" "miniflux_data" {
-  name = "miniflux_data"
+resource "docker_volume" "miniflux_db" {
+  name = "miniflux_db"
 }
 
 resource "random_string" "miniflux_db_password" {
@@ -304,13 +304,13 @@ resource "docker_container" "standardnotes_db" {
   }
 
   volumes {
-    volume_name    = "${docker_volume.standardnotes_data.name}"
+    volume_name    = "${docker_volume.standardnotes_db.name}"
     container_path = "/var/lib/mysql"
   }
 }
 
-resource "docker_volume" "standardnotes_data" {
-  name = "standardnotes_data"
+resource "docker_volume" "standardnotes_db" {
+  name = "standardnotes_db"
 }
 
 resource "random_string" "standardnotes_db_password" {
