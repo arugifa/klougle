@@ -274,16 +274,16 @@ As Kloügle doesn't provide any central authentication system for the moment:
 
 For the following services, you have to create a new user by yourself:
 
-- **notes application:** `http://notes.<YOUR_DOMAIN>/` (please update the server's
-  URL when trying to register/sign in with `http://sync.notes.<YOUR_DOMAIN>/`;
+- **notes application:** `https://notes.<YOUR_DOMAIN>/` (please update the server's
+  URL when trying to register/sign in with `https://sync.notes.<YOUR_DOMAIN>/`;
   by default, a fake one is used to prevent anyone to create accounts on your
   setup)
 
 But for the following ones, here are the default credentials:
 
-- **web library:** `wallabag` / `wallabag` (`http://library.<YOUR_DOMAIN>/users/1/edit`)
-- **news reader:** `admin` / `password` (`http://news.<YOUR_DOMAIN>/settings`)
-- **task management:** `admin` / `admin` (`http://tasks.<YOUR_DOMAIN>/user/1/password`)
+- **web library:** `wallabag` / `wallabag` (`https://library.<YOUR_DOMAIN>/users/1/edit`)
+- **news reader:** `admin` / `password` (`https://news.<YOUR_DOMAIN>/settings`)
+- **task management:** `admin` / `admin` (`https://tasks.<YOUR_DOMAIN>/user/1/password`)
 
 
 ## Contributing

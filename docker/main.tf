@@ -201,7 +201,7 @@ resource "docker_container" "standardnotes_web" {
     "LETSENCRYPT_HOST=${local.domain_notes_webui}",
 
     # Standard Notes Server
-    "SF_DEFAULT_SERVER=http://rtfm.${local.domain_notes_webui}",
+    "SF_DEFAULT_SERVER=https://rtfm.${local.domain_notes_webui}",
   ]
 
   networks_advanced {
@@ -232,6 +232,8 @@ resource "docker_container" "standardnotes_server" {
     # Reverse Proxy
     "VIRTUAL_HOST=${local.domain_notes_server}",
     "VIRTUAL_PORT=3000",
+
+    "LETSENCRYPT_HOST=${local.domain_notes_server}",
 
     # Standard Notes Server Setup
     "RAILS_ENV=production",
@@ -279,7 +281,7 @@ resource "docker_container" "wallabag" {
 
     # Wallabag Configuration
     # Base domain for asset URLs.
-    "SYMFONY__ENV__DOMAIN_NAME=http://${local.domain_library}",
+    "SYMFONY__ENV__DOMAIN_NAME=https://${local.domain_library}",
     # Disable user registration.
     "SYMFONY__ENV__FOSUSER_REGISTRATION=false",
     # Don't use the default Wallabag secret.
