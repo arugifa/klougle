@@ -9,6 +9,15 @@ locals {
 }
 
 
+# ========================
+# Networking Configuration
+# ========================
+
+locals {
+  version_nginx_letsencrypt = "v1.12"
+}
+
+
 # ======================
 # Service Configurations
 # ======================

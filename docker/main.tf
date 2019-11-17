@@ -13,7 +13,7 @@ provider "docker" {
 # ==========
 
 resource "docker_network" "internal_network" {
-  name     = "internal_network"
+  name = "internal_network"
 }
 
 # Reverse Proxy
@@ -25,13 +25,18 @@ resource "docker_image" "nginx" {
 }
 
 resource "docker_container" "nginx" {
-  image    = "${docker_image.nginx.latest}"
-  name     = "nginx"
-  start    = true
+  image = "${docker_image.nginx.latest}"
+  name  = "nginx"
+  start = true
 
   ports {
     internal = 80
     external = 80
+  }
+
+  ports {
+    internal = 443
+    external = 443
   }
 
   networks_advanced {
@@ -45,10 +50,60 @@ resource "docker_container" "nginx" {
   }
 
   volumes {
-    # Give access to Docker's socket, to discover other containers.
+    # Give access to Docker's socket, to discover service containers.
     host_path      = "/var/run/docker.sock"
     container_path = "/tmp/docker.sock"
     read_only      = true
+  }
+
+  volumes {
+    # Used by Nginx Let's Encrypt,
+    # to store the certificates, private keys, and ACME account keys.
+    container_path = "/etc/nginx/certs"
+  }
+
+  volumes {
+    # Used by Nginx Let's Encrypt,
+    # to let Nginx serving the http-01 challenge files to Let's Encrypt.
+    container_path = "/etc/nginx/vhost.d"
+  }
+
+  volumes {
+    # Used by Nginx Let's Encrypt,
+    # to store the http-01 challenge files.
+    container_path = "/usr/share/nginx/html"
+  }
+}
+
+# Let's Encrypt
+# =============
+
+resource "docker_image" "nginx_letsencrypt" {
+  count = "${var.host == "localhost" ? 0 : 1}"
+  name  = "jrcs/letsencrypt-nginx-proxy-companion:${local.version_nginx_letsencrypt}"
+}
+
+resource "docker_container" "nginx_letsencrypt" {
+  count = "${var.host == "localhost" ? 0 : 1}"
+
+  image = "${docker_image.nginx_letsencrypt.latest}"
+  name  = "nginx_letsencrypt"
+  start = true
+
+  env = [
+    "DEFAULT_EMAIL=${var.letsencrypt_email}",
+  ]
+
+  volumes {
+    # Give access to Docker's socket, to discover service containers.
+    host_path      = "/var/run/docker.sock"
+    container_path = "/var/run/docker.sock"
+    read_only      = true
+  }
+
+  volumes {
+    # Store certificates, keys and challenge files inside the Nginx container.
+    from_container = "${docker_container.nginx.name}"
   }
 }
 
@@ -61,17 +116,18 @@ resource "docker_container" "nginx" {
 # ========
 
 resource "docker_image" "kanboard" {
-  name          = "kanboard/kanboard:${local.version_kanboard}"
+  name = "kanboard/kanboard:${local.version_kanboard}"
 }
 
 resource "docker_container" "kanboard" {
-  image   = "${docker_image.kanboard.latest}"
-  name    = "kanboard"
-  start   = true
+  image = "${docker_image.kanboard.latest}"
+  name  = "kanboard"
+  start = true
 
   env = [
     # Reverse Proxy
     "VIRTUAL_HOST=${local.domain_tasks}",
+    "LETSENCRYPT_HOST=${local.domain_tasks}",
 
     # Kanboard Database
     "DATABASE_URL=${local.db_url_kanboard}",
@@ -95,13 +151,13 @@ resource "docker_volume" "kanboard_data" {
 # ========
 
 resource "docker_image" "miniflux" {
-  name          = "miniflux/miniflux:${local.version_miniflux}"
+  name = "miniflux/miniflux:${local.version_miniflux}"
 }
 
 resource "docker_container" "miniflux" {
-  image   = "${docker_image.miniflux.latest}"
-  name    = "miniflux"
-  start   = true
+  image = "${docker_image.miniflux.latest}"
+  name  = "miniflux"
+  start = true
 
   # Wait for database's container to start (dumb implementation™).
   restart = "on-failure"
@@ -109,6 +165,7 @@ resource "docker_container" "miniflux" {
   env = [
     # Reverse Proxy
     "VIRTUAL_HOST=${local.domain_news}",
+    "LETSENCRYPT_HOST=${local.domain_news}",
 
     # Miniflux Database
     "DATABASE_URL=${local.db_url_miniflux}",
@@ -130,17 +187,18 @@ resource "docker_container" "miniflux" {
 # ==============
 
 resource "docker_image" "standardnotes_web" {
-  name          = "arugifa/standardnotes-web:${local.version_standardnotes_web}"
+  name = "arugifa/standardnotes-web:${local.version_standardnotes_web}"
 }
 
 resource "docker_container" "standardnotes_web" {
-  image   = "${docker_image.standardnotes_web.latest}"
-  name    = "standardnotes_web"
-  start   = true
+  image = "${docker_image.standardnotes_web.latest}"
+  name  = "standardnotes_web"
+  start = true
 
   env = [
     # Reverse Proxy
     "VIRTUAL_HOST=${local.domain_notes_webui}",
+    "LETSENCRYPT_HOST=${local.domain_notes_webui}",
 
     # Standard Notes Server
     "SF_DEFAULT_SERVER=http://rtfm.${local.domain_notes_webui}",
@@ -152,13 +210,13 @@ resource "docker_container" "standardnotes_web" {
 }
 
 resource "docker_image" "standardnotes_server" {
-  name          = "arugifa/standardnotes-server:${local.version_standardnotes_server}"
+  name = "arugifa/standardnotes-server:${local.version_standardnotes_server}"
 }
 
 resource "docker_container" "standardnotes_server" {
-  image   = "${docker_image.standardnotes_server.latest}"
+  image = "${docker_image.standardnotes_server.latest}"
   name  = "standardnotes_server"
-  start   = true
+  start = true
 
   # Wait for database's container to start (dumb implementation™).
   restart = "on-failure"
@@ -193,7 +251,7 @@ resource "docker_container" "standardnotes_server" {
 }
 
 resource "random_string" "standardnotes_secret_key" {
-  length  = 16
+  length = 16
 
   # Special characters make Rails to break down.
   special = false
@@ -243,7 +301,7 @@ resource "docker_volume" "kanboard_db" {
 }
 
 resource "random_string" "kanboard_db_password" {
-  length = 8
+  length  = 8
   special = false
 }
 
@@ -276,7 +334,7 @@ resource "docker_volume" "miniflux_db" {
 }
 
 resource "random_string" "miniflux_db_password" {
-  length = 8
+  length  = 8
   special = false
 }
 
@@ -314,6 +372,6 @@ resource "docker_volume" "standardnotes_db" {
 }
 
 resource "random_string" "standardnotes_db_password" {
-  length = 8
+  length  = 8
   special = false
 }

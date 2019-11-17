@@ -174,7 +174,7 @@ Also, you have to choose a **F**ully **Q**ualified **D**omain **N**ame for your 
 ```sh
 cd docker/
 terraform init
-terraform apply -var 'host=<SERVER_FQDN>'
+terraform apply -var 'host=<SERVER_FQDN>' -var 'letsencrypt_email=<EMAIL_ADDRESS>'
 ```
 
 
@@ -254,7 +254,7 @@ terraform apply -var 'flavor=<FLAVOR_NAME>' -var 'key_pairs=["<PAIR_1>","<PAIR_2
 # it is finally time for deploying Kloügle services with Docker.
 cd ../docker/
 terraform init
-terraform apply -var 'host=<SERVER_FQDN>'
+terraform apply -var 'host=<SERVER_FQDN>' -var 'letsencrypt_email=<EMAIL_ADDRESS>'
 ```
 
 
