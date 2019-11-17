@@ -13,3 +13,7 @@ output "miniflux_db_password" {
 output "standardnotes_db_password" {
   value = "${local.db_password_standardnotes}"
 }
+
+output "wallabag_db_password" {
+  value = "${local.db_password_wallabag}"
+}

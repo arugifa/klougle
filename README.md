@@ -17,6 +17,8 @@ Currently, here is what you can expect to find in Kloügle:
   like [Google Keep](https://keep.google.com/) or [Evernote](https://evernote.com/),
 - a **news** reader ([Miniflux](https://miniflux.app/)),
   like [Google News](https://news.google.com/) or [Feedly](https://feedly.com/),
+- a web **library** ([Wallabag](https://wallabag.org/)),
+  like [Pocket](https://getpocket.com/),
 - a personal **task management** board ([Kanboard](https://kanboard.org/)),
   like [Trello](https://trello.com/).
 
@@ -113,7 +115,9 @@ records for every Kloügle service.
 
 As only a very few services are available for now, it's pretty simple:
 
+- `library.<YOUR_DOMAIN>`
 - `news.<YOUR_DOMAIN>`
+- `notes.<YOUR_DOMAIN>`
 - `tasks.<YOUR_DOMAIN>`
 
 When deploying Kloügle online, **Terraform** will provide you the IP address of
@@ -277,6 +281,7 @@ For the following services, you have to create a new user by yourself:
 
 But for the following ones, here are the default credentials:
 
+- **web library:** `wallabag` / `wallabag` (`http://library.<YOUR_DOMAIN>/users/1/edit`)
 - **news reader:** `admin` / `password` (`http://news.<YOUR_DOMAIN>/settings`)
 - **task management:** `admin` / `admin` (`http://tasks.<YOUR_DOMAIN>/user/1/password`)
 

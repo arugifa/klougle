@@ -57,6 +57,15 @@ locals {
   version_standardnotes_server = "0.0.0-rc.2019.08.02"
 }
 
+# Wallabag
+# ========
+
+locals {
+  domain_library   = "library.${local.domain}"
+
+  version_wallabag = "2.3.8"
+}
+
 
 # =======================
 # Database Configurations
@@ -92,4 +101,23 @@ locals {
   db_user_standardnotes     = "klougle"
   db_password_standardnotes = "${random_string.standardnotes_db_password.result}"
   db_host_standardnotes     = "standardnotes_db"
+}
+
+# Wallabag
+# ========
+
+locals {
+  # XXX: Use different values for DB's name and user's name! (11/2019)
+  #
+  # Otherwise, an error appears in the logs when connecting
+  # for the first time to the web interface:
+  #
+  #   relation "wallabag_craue_config_setting" does not exist
+  #
+  db_name_wallabag     = "wallabag"
+  db_user_wallabag     = "klougle"
+  db_password_wallabag = "${random_string.wallabag_db_password.result}"
+  db_host_wallabag     = "wallabag_db"
+
+  redis_host_wallabag  = "wallabag_redis"
 }

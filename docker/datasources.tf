@@ -13,3 +13,7 @@ data "docker_registry_image" "nginx" {
 data "docker_registry_image" "postgresql" {
   name = "postgres:11-alpine"
 }
+
+data "docker_registry_image" "redis" {
+  name = "redis:5-alpine"
+}

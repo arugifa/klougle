@@ -257,6 +257,80 @@ resource "random_string" "standardnotes_secret_key" {
   special = false
 }
 
+# Wallabag
+# ========
+
+resource "docker_image" "wallabag" {
+  name = "wallabag/wallabag:${local.version_wallabag}"
+}
+
+resource "docker_container" "wallabag" {
+  image = "${docker_image.wallabag.latest}"
+  name  = "wallabag"
+  start = true
+
+  # Wait for database's container to start (dumb implementation™).
+  restart = "on-failure"
+
+  env = [
+    # Reverse Proxy
+    "VIRTUAL_HOST=${local.domain_library}",
+    "LETSENCRYPT_HOST=${local.domain_library}",
+
+    # Wallabag Configuration
+    # Base domain for asset URLs.
+    "SYMFONY__ENV__DOMAIN_NAME=http://${local.domain_library}",
+    # Disable user registration.
+    "SYMFONY__ENV__FOSUSER_REGISTRATION=false",
+    # Don't use the default Wallabag secret.
+    "SYMFONY__ENV__SECRET=${random_string.wallabag_secret_key.result}",
+
+    # Wallabag Databases
+    "SYMFONY__ENV__REDIS_HOST=${local.redis_host_wallabag}",
+
+    "SYMFONY__ENV__DATABASE_DRIVER=pdo_pgsql",
+    "SYMFONY__ENV__DATABASE_HOST=${local.db_host_wallabag}",
+    "SYMFONY__ENV__DATABASE_NAME=${local.db_name_wallabag}",
+    "SYMFONY__ENV__DATABASE_USER=${local.db_user_wallabag}",
+    "SYMFONY__ENV__DATABASE_PASSWORD=${local.db_password_wallabag}",
+
+    # XXX: Set absolutely the DB's default port! (11/2019)
+    #
+    # Otherwise, an error appears in the logs
+    # during container creation/provisioning:
+    #
+    #   port is of type <type 'str'> and we were unable to convert to int:
+    #   invalid literal for int() with base 10: '~'
+    #
+    "SYMFONY__ENV__DATABASE_PORT=5432",
+
+    # XXX: Set absolutely the DB driver class! (11/2019)
+    #
+    # Otherwise, the database provisioning fails
+    # when the container starts for the first time.
+    #
+    # Also, another error appears in the logs
+    # if trying then to connect to the web interface:
+    #
+    #   The stream or file "/var/www/wallabag/var/logs/prod.log" could not be opened:
+    #   failed to open stream: Permission denied in /var/www/wallabag/vendor/monolog/monolog/src/Monolog/Handler/StreamHandler.php:107
+    #
+    "SYMFONY__ENV__DATABASE_DRIVER_CLASS=Wallabag\\CoreBundle\\Doctrine\\DBAL\\Driver\\CustomPostgreSQLDriver",
+
+    # Only used to provision the database
+    # when starting the container for the first time.
+    "POSTGRES_USER=${local.db_user_wallabag}",
+    "POSTGRES_PASSWORD=${local.db_password_wallabag}",
+  ]
+
+  networks_advanced {
+    name = "${docker_network.internal_network.name}"
+  }
+}
+
+resource "random_string" "wallabag_secret_key" {
+  length  = 16
+}
 
 # =========
 # Databases
@@ -270,6 +344,11 @@ resource "docker_image" "mysql" {
 resource "docker_image" "postgresql" {
   name          = "${data.docker_registry_image.postgresql.name}"
   pull_triggers = ["${data.docker_registry_image.postgresql.sha256_digest}"]
+}
+
+resource "docker_image" "redis" {
+  name          = "${data.docker_registry_image.redis.name}"
+  pull_triggers = ["${data.docker_registry_image.redis.sha256_digest}"]
 }
 
 # Kanboard
@@ -372,6 +451,58 @@ resource "docker_volume" "standardnotes_db" {
 }
 
 resource "random_string" "standardnotes_db_password" {
+  length  = 8
+  special = false
+}
+
+# Wallabag
+# ========
+
+resource "docker_container" "wallabag_redis" {
+  # Redis is only used for data imports:
+  # https://doc.wallabag.org/en/user/import/
+
+  image = "${docker_image.redis.latest}"
+  name  = "${local.redis_host_wallabag}"
+  start = true
+
+  networks_advanced {
+    name = "${docker_network.internal_network.name}"
+  }
+}
+
+resource "docker_container" "wallabag_db" {
+  image = "${docker_image.postgresql.latest}"
+  name  = "${local.db_host_wallabag}"
+  start = true
+
+  env = [
+    # XXX: Don't define POSTGRES_DB! (11/2019)
+    #
+    # Otherwise, an error appears in the logs when connecting
+    # for the first time to the web interface:
+    #
+    #   relation "wallabag_craue_config_setting" does not exist
+    #
+    "POSTGRES_USER=${local.db_user_wallabag}",
+    "POSTGRES_PASSWORD=${local.db_password_wallabag}",
+  ]
+
+  networks_advanced {
+    name = "${docker_network.internal_network.name}"
+  }
+
+  volumes {
+    volume_name    = "${docker_volume.wallabag_db.name}"
+    container_path = "/var/lib/postgresql/data"
+  }
+}
+
+resource "docker_volume" "wallabag_db" {
+  name = "wallabag_db"
+}
+
+resource "random_string" "wallabag_db_password" {
   length  = 8
   special = false
 }

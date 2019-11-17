@@ -18,10 +18,17 @@ assert_service_is_online () {
     done
 }
 
+# TODO: Test assets are correctly loaded (HTTP status code 200) (11/2019)
+#
+# When creating Wallabag container, if SYMFONY__ENV__DOMAIN_NAME
+# environment variable is not set, then Wallabag uses a default
+# and incorrect base domain to generate asset URLs.
+#
+assert_service_is_online "Library"               "library.localhost"
+
 assert_service_is_online "News Reader"           "news.localhost"
 
-# TODO: Test communication between
-#       Standard Notes Web UI and default server (10/2019)
+# TODO: Test communication between web UI and default server (10/2019)
 assert_service_is_online "Notes Web UI"          "notes.localhost"
 assert_service_is_online "Notes Server"          "sync.notes.localhost"
 
