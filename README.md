@@ -264,8 +264,13 @@ terraform apply -var 'host=<SERVER_FQDN>' -var 'letsencrypt_email=<EMAIL_ADDRESS
 
 ## Configuring Kloügle
 
-The only mandatory action you have to perform after installing Kloügle is to
-change services' default passwords, or create new users manually.
+You need to perform a couple of actions after having installed Kloügle:
+
+- create new users or change default passwords,
+- configure some services via their admin interface.
+
+
+### Default Passwords
 
 As Kloügle doesn't provide any central authentication system for the moment:
 
@@ -281,9 +286,19 @@ For the following services, you have to create a new user by yourself:
 
 But for the following ones, here are the default credentials:
 
-- **web library:** `wallabag` / `wallabag` (`https://library.<YOUR_DOMAIN>/users/1/edit`)
+- **web library:** `wallabag` / `wallabag` (`https://library.<YOUR_DOMAIN>/config#set4`)
 - **news reader:** `admin` / `password` (`https://news.<YOUR_DOMAIN>/settings`)
 - **task management:** `admin` / `admin` (`https://tasks.<YOUR_DOMAIN>/user/1/password`)
+
+
+### Additional Configuration
+
+Unfortunately, the following services need to be configured manually via their
+web interface:
+
+- **web library:**
+  - enable asynchronous imports with Redis (`https://library.<YOUR_DOMAIN>/settings#set-import`)
+  - enable local download of article images (`https://library.<YOUR_DOMAIN>/settings#set-misc`)
 
 
 ## Contributing

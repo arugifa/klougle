@@ -267,6 +267,9 @@ resource "docker_image" "wallabag" {
 }
 
 resource "docker_container" "wallabag" {
+  # See https://github.com/wallabag/docker/blob/master/root/etc/ansible/entrypoint.yml
+  # to understand how Wallabag provisioning works.
+
   image = "${docker_image.wallabag.latest}"
   name  = "wallabag"
   start = true
@@ -308,7 +311,7 @@ resource "docker_container" "wallabag" {
 
     # XXX: Set absolutely the DB driver class! (11/2019)
     #
-    # Otherwise, the database provisioning fails
+    # Otherwise, database provisioning fails
     # when the container starts for the first time.
     #
     # Also, another error appears in the logs
@@ -319,7 +322,7 @@ resource "docker_container" "wallabag" {
     #
     "SYMFONY__ENV__DATABASE_DRIVER_CLASS=Wallabag\\CoreBundle\\Doctrine\\DBAL\\Driver\\CustomPostgreSQLDriver",
 
-    # Only used to provision the database
+    # Only used to provision database
     # when starting the container for the first time.
     "POSTGRES_USER=${local.db_user_wallabag}",
     "POSTGRES_PASSWORD=${local.db_password_wallabag}",
@@ -328,10 +331,19 @@ resource "docker_container" "wallabag" {
   networks_advanced {
     name = "${docker_network.internal_network.name}"
   }
+
+  volumes {
+    volume_name    = "${docker_volume.wallabag_images.name}"
+    container_path = "/var/www/wallabag/web/assets/images"
+  }
+}
+
+resource "docker_volume" "wallabag_images" {
+  name = "wallabag_images"
 }
 
 resource "random_string" "wallabag_secret_key" {
-  length  = 16
+  length = 16
 }
 
 # =========
@@ -482,7 +494,7 @@ resource "docker_container" "wallabag_db" {
     # XXX: Don't define POSTGRES_DB! (11/2019)
     #
     # Otherwise, an error appears in the logs when connecting
-    # for the first time to the web interface:
+    # for the first time to the Wallabag's web interface:
     #
     #   relation "wallabag_craue_config_setting" does not exist
     #
