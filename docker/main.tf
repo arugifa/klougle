@@ -344,6 +344,9 @@ resource "docker_volume" "wallabag_images" {
 
 resource "random_string" "wallabag_secret_key" {
   length = 16
+
+  # Special characters make Wallabag provisioning to break down.
+  special = false
 }
 
 # =========
