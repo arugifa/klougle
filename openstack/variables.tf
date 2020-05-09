@@ -8,9 +8,8 @@ variable "flavor" {
 
 variable "key_pairs" {
   description = "Authorized key pairs for remote access to the server."
-  type        = "list"
+  type        = list(string)
 }
-
 
 # ==========
 # Networking
@@ -37,7 +36,7 @@ variable "external_network" {
 
 variable "floating_ip_pool" {
   description = "Network used to get a floating IP and connect to the Internet. Must be used with internal_network."
-  default = ""
+  default     = ""
 }
 
 variable "internal_network" {

@@ -1,6 +1,17 @@
-# ====================
-# Server Configuration
-# ====================
+# =================
+# Terraform Backend
+# =================
+
+# terraform {
+#   backend "swift" {
+#     container         = "klougle-openstack-terraform"
+#     archive_container = "klougle-openstack-terraform-backup"
+#   }
+# }
+
+# ==============
+# Kloügle Server
+# ==============
 
 # Operating System
 # ================
@@ -17,19 +28,30 @@ resource "openstack_images_image_v2" "rancheros" {
 
 resource "openstack_compute_instance_v2" "server" {
   name            = "Kloügle Server"
-  image_id        = "${openstack_images_image_v2.rancheros.id}"
-  flavor_id       = "${data.openstack_compute_flavor_v2.flavor.id}"
-  security_groups = ["${openstack_networking_secgroup_v2.firewall.name}"]
+  image_id        = openstack_images_image_v2.rancheros.id
+  flavor_id       = data.openstack_compute_flavor_v2.flavor.id
+  security_groups = [openstack_networking_secgroup_v2.firewall.name]
 
-  config_drive    = true
-  user_data       = "${data.template_file.cloud_init.rendered}"
+  config_drive = true
+  user_data    = data.template_file.cloud_init.rendered
 
   network {
     # If the provider doesn't allow to directly connect to the external
     # network, then we have to connect to an internal network instead, and use
     # a floating IP.
-    uuid = "${var.floating_ip_pool != "" ? "${element(concat(data.openstack_networking_network_v2.internal_network.*.id, list("")), 0)}" : "${element(concat(data.openstack_networking_network_v2.external_network.*.id, list("")), 0)}"}"
-
+    uuid = var.floating_ip_pool != "" ? element(
+      concat(
+        data.openstack_networking_network_v2.internal_network.*.id,
+        [""],
+      ),
+      0,
+      ) : element(
+      concat(
+        data.openstack_networking_network_v2.external_network.*.id,
+        [""],
+      ),
+      0,
+    )
     # Thanks to https://github.com/hashicorp/terraform/issues/11210
 
     # For an unknown reason, attaching the server to an internal network with
@@ -47,15 +69,14 @@ resource "openstack_blockstorage_volume_v2" "data" {
 }
 
 resource "openstack_compute_volume_attach_v2" "data" {
-  instance_id = "${openstack_compute_instance_v2.server.id}"
-  volume_id   = "${openstack_blockstorage_volume_v2.data.id}"
-  device      = "${local.data_device}"
+  instance_id = openstack_compute_instance_v2.server.id
+  volume_id   = openstack_blockstorage_volume_v2.data.id
+  device      = local.data_device
 }
 
-
-# ==========
-# Networking
-# ==========
+# ==================
+# Kloügle Networking
+# ==================
 
 # Floating IP
 # ===========
@@ -64,22 +85,22 @@ resource "openstack_compute_volume_attach_v2" "data" {
 # to the external network.
 
 resource "openstack_networking_floatingip_v2" "public_ip" {
-  count   = "${var.floating_ip_pool != "" ? 1 : 0}"
-  pool    = "${data.openstack_networking_network_v2.floating_ip_pool.name}"
+  count = var.floating_ip_pool != "" ? 1 : 0
+  pool  = data.openstack_networking_network_v2.floating_ip_pool[0].name
 }
 
 resource "openstack_compute_floatingip_associate_v2" "public_ip" {
-  count       = "${var.floating_ip_pool != "" ? 1 : 0}"
+  count = var.floating_ip_pool != "" ? 1 : 0
 
-  floating_ip = "${openstack_networking_floatingip_v2.public_ip.address}"
-  instance_id = "${openstack_compute_instance_v2.server.id}"
+  floating_ip = openstack_networking_floatingip_v2.public_ip[0].address
+  instance_id = openstack_compute_instance_v2.server.id
 }
 
 # Firewall
 # ========
 
 resource "openstack_networking_secgroup_v2" "firewall" {
-  name        = "Kloügle Firewall"
+  name = "Kloügle Firewall"
 }
 
 resource "openstack_networking_secgroup_rule_v2" "docker" {
@@ -89,7 +110,7 @@ resource "openstack_networking_secgroup_rule_v2" "docker" {
   port_range_min    = 2376
   port_range_max    = 2376
   remote_ip_prefix  = "0.0.0.0/0"
-  security_group_id = "${openstack_networking_secgroup_v2.firewall.id}"
+  security_group_id = openstack_networking_secgroup_v2.firewall.id
 }
 
 resource "openstack_networking_secgroup_rule_v2" "http" {
@@ -99,7 +120,7 @@ resource "openstack_networking_secgroup_rule_v2" "http" {
   port_range_min    = 80
   port_range_max    = 80
   remote_ip_prefix  = "0.0.0.0/0"
-  security_group_id = "${openstack_networking_secgroup_v2.firewall.id}"
+  security_group_id = openstack_networking_secgroup_v2.firewall.id
 }
 
 resource "openstack_networking_secgroup_rule_v2" "https" {
@@ -109,7 +130,7 @@ resource "openstack_networking_secgroup_rule_v2" "https" {
   port_range_min    = 443
   port_range_max    = 443
   remote_ip_prefix  = "0.0.0.0/0"
-  security_group_id = "${openstack_networking_secgroup_v2.firewall.id}"
+  security_group_id = openstack_networking_secgroup_v2.firewall.id
 }
 
 resource "openstack_networking_secgroup_rule_v2" "ssh" {
@@ -119,40 +140,40 @@ resource "openstack_networking_secgroup_rule_v2" "ssh" {
   port_range_min    = 22
   port_range_max    = 22
   remote_ip_prefix  = "0.0.0.0/0"
-  security_group_id = "${openstack_networking_secgroup_v2.firewall.id}"
+  security_group_id = openstack_networking_secgroup_v2.firewall.id
 }
 
 # SSH and Docker TLS Configuration
 # ================================
 
 resource "null_resource" "ssh_config" {
-  triggers {
-    server_id = "${openstack_compute_instance_v2.server.id}"
-    public_ip = "${local.public_ip}"
+  triggers = {
+    server_id = openstack_compute_instance_v2.server.id
+    public_ip = local.public_ip
   }
 
   provisioner "local-exec" {
-    command = "${data.template_file.update_ssh_known_hosts.rendered}"
+    command = data.template_file.update_ssh_known_hosts.rendered
   }
 }
 
 resource "null_resource" "docker_tls" {
-  triggers {
-    server_id = "${openstack_compute_instance_v2.server.id}"
+  triggers = {
+    server_id = openstack_compute_instance_v2.server.id
   }
 
   provisioner "remote-exec" {
-    inline = ["${data.template_file.setup_docker_tls.rendered}"]
+    inline = [data.template_file.setup_docker_tls.rendered]
 
     connection {
-      host    = "${local.public_ip}"
-      user    = "${local.ssh_user}"
+      host = local.public_ip
+      user = local.ssh_user
       # FIXME(arugifa): Why wait-for-docker, in cloud_init.yml, hangs for 6 minutes? (12/2018)
       # timeout = "10m"
     }
   }
 
   provisioner "local-exec" {
-    command = "${data.template_file.copy_docker_certificates.rendered}"
+    command = data.template_file.copy_docker_certificates.rendered
   }
 }

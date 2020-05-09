@@ -1,12 +1,23 @@
+# =================
+# Terraform Backend
+# =================
+
+# terraform {
+#   backend "swift" {
+#     container         = "klougle-terraform"
+#     archive_container = "klougle-terraform-backup"
+#     state_name        = "docker.tfstate.tf"
+#   }
+# }
+
 # ====================
 # Docker Configuration
 # ====================
 
 provider "docker" {
-  host      = "${var.host == "localhost" ? "${local.docker_unix_socket}" : "${local.docker_tcp_socket}"}"
-  cert_path = "${var.host == "localhost" ? "" : pathexpand("${local.docker_certs}")}"
+  host      = var.host == "localhost" ? local.docker_unix_socket : local.docker_tcp_socket
+  cert_path = var.host == "localhost" ? "" : pathexpand(local.docker_certs)
 }
-
 
 # ==========
 # Networking
@@ -20,12 +31,12 @@ resource "docker_network" "internal_network" {
 # =============
 
 resource "docker_image" "nginx" {
-  name          = "${data.docker_registry_image.nginx.name}"
-  pull_triggers = ["${data.docker_registry_image.nginx.sha256_digest}"]
+  name          = data.docker_registry_image.nginx.name
+  pull_triggers = [data.docker_registry_image.nginx.sha256_digest]
 }
 
 resource "docker_container" "nginx" {
-  image = "${docker_image.nginx.latest}"
+  image = docker_image.nginx.latest
   name  = "nginx"
   start = true
 
@@ -46,7 +57,7 @@ resource "docker_container" "nginx" {
 
   networks_advanced {
     # To connect with other containers.
-    name = "${docker_network.internal_network.name}"
+    name = docker_network.internal_network.name
   }
 
   volumes {
@@ -79,14 +90,14 @@ resource "docker_container" "nginx" {
 # =============
 
 resource "docker_image" "nginx_letsencrypt" {
-  count = "${var.host == "localhost" ? 0 : 1}"
+  count = var.host == "localhost" ? 0 : 1
   name  = "jrcs/letsencrypt-nginx-proxy-companion:${local.version_nginx_letsencrypt}"
 }
 
 resource "docker_container" "nginx_letsencrypt" {
-  count = "${var.host == "localhost" ? 0 : 1}"
+  count = var.host == "localhost" ? 0 : 1
 
-  image = "${docker_image.nginx_letsencrypt.latest}"
+  image = docker_image.nginx_letsencrypt[0].latest
   name  = "nginx_letsencrypt"
   start = true
 
@@ -103,10 +114,9 @@ resource "docker_container" "nginx_letsencrypt" {
 
   volumes {
     # Store certificates, keys and challenge files inside the Nginx container.
-    from_container = "${docker_container.nginx.name}"
+    from_container = docker_container.nginx.name
   }
 }
-
 
 # ========
 # Services
@@ -120,7 +130,7 @@ resource "docker_image" "kanboard" {
 }
 
 resource "docker_container" "kanboard" {
-  image = "${docker_image.kanboard.latest}"
+  image = docker_image.kanboard.latest
   name  = "kanboard"
   start = true
 
@@ -134,11 +144,11 @@ resource "docker_container" "kanboard" {
   ]
 
   networks_advanced {
-    name = "${docker_network.internal_network.name}"
+    name = docker_network.internal_network.name
   }
 
   volumes {
-    volume_name    = "${docker_volume.kanboard_data.name}"
+    volume_name    = docker_volume.kanboard_data.name
     container_path = "/var/www/app/data"
   }
 }
@@ -155,7 +165,7 @@ resource "docker_image" "miniflux" {
 }
 
 resource "docker_container" "miniflux" {
-  image = "${docker_image.miniflux.latest}"
+  image = docker_image.miniflux.latest
   name  = "miniflux"
   start = true
 
@@ -179,7 +189,7 @@ resource "docker_container" "miniflux" {
   ]
 
   networks_advanced {
-    name = "${docker_network.internal_network.name}"
+    name = docker_network.internal_network.name
   }
 }
 
@@ -191,7 +201,7 @@ resource "docker_image" "standardnotes_web" {
 }
 
 resource "docker_container" "standardnotes_web" {
-  image = "${docker_image.standardnotes_web.latest}"
+  image = docker_image.standardnotes_web.latest
   name  = "standardnotes_web"
   start = true
 
@@ -205,7 +215,7 @@ resource "docker_container" "standardnotes_web" {
   ]
 
   networks_advanced {
-    name = "${docker_network.internal_network.name}"
+    name = docker_network.internal_network.name
   }
 }
 
@@ -214,7 +224,7 @@ resource "docker_image" "standardnotes_server" {
 }
 
 resource "docker_container" "standardnotes_server" {
-  image = "${docker_image.standardnotes_server.latest}"
+  image = docker_image.standardnotes_server.latest
   name  = "standardnotes_server"
   start = true
 
@@ -248,7 +258,7 @@ resource "docker_container" "standardnotes_server" {
   ]
 
   networks_advanced {
-    name = "${docker_network.internal_network.name}"
+    name = docker_network.internal_network.name
   }
 }
 
@@ -270,7 +280,7 @@ resource "docker_container" "wallabag" {
   # See https://github.com/wallabag/docker/blob/master/root/etc/ansible/entrypoint.yml
   # to understand how Wallabag provisioning works.
 
-  image = "${docker_image.wallabag.latest}"
+  image = docker_image.wallabag.latest
   name  = "wallabag"
   start = true
 
@@ -329,11 +339,11 @@ resource "docker_container" "wallabag" {
   ]
 
   networks_advanced {
-    name = "${docker_network.internal_network.name}"
+    name = docker_network.internal_network.name
   }
 
   volumes {
-    volume_name    = "${docker_volume.wallabag_images.name}"
+    volume_name    = docker_volume.wallabag_images.name
     container_path = "/var/www/wallabag/web/assets/images"
   }
 }
@@ -354,26 +364,26 @@ resource "random_string" "wallabag_secret_key" {
 # =========
 
 resource "docker_image" "mysql" {
-  name          = "${data.docker_registry_image.mysql.name}"
-  pull_triggers = ["${data.docker_registry_image.mysql.sha256_digest}"]
+  name          = data.docker_registry_image.mysql.name
+  pull_triggers = [data.docker_registry_image.mysql.sha256_digest]
 }
 
 resource "docker_image" "postgresql" {
-  name          = "${data.docker_registry_image.postgresql.name}"
-  pull_triggers = ["${data.docker_registry_image.postgresql.sha256_digest}"]
+  name          = data.docker_registry_image.postgresql.name
+  pull_triggers = [data.docker_registry_image.postgresql.sha256_digest]
 }
 
 resource "docker_image" "redis" {
-  name          = "${data.docker_registry_image.redis.name}"
-  pull_triggers = ["${data.docker_registry_image.redis.sha256_digest}"]
+  name          = data.docker_registry_image.redis.name
+  pull_triggers = [data.docker_registry_image.redis.sha256_digest]
 }
 
 # Kanboard
 # ========
 
 resource "docker_container" "kanboard_db" {
-  image = "${docker_image.postgresql.latest}"
-  name  = "${local.db_host_kanboard}"
+  image = docker_image.postgresql.latest
+  name  = local.db_host_kanboard
   start = true
 
   env = [
@@ -383,11 +393,11 @@ resource "docker_container" "kanboard_db" {
   ]
 
   networks_advanced {
-    name = "${docker_network.internal_network.name}"
+    name = docker_network.internal_network.name
   }
 
   volumes {
-    volume_name    = "${docker_volume.kanboard_db.name}"
+    volume_name    = docker_volume.kanboard_db.name
     container_path = "/var/lib/postgresql/data"
   }
 }
@@ -405,8 +415,8 @@ resource "random_string" "kanboard_db_password" {
 # ========
 
 resource "docker_container" "miniflux_db" {
-  image = "${docker_image.postgresql.latest}"
-  name  = "${local.db_host_miniflux}"
+  image = docker_image.postgresql.latest
+  name  = local.db_host_miniflux
   start = true
 
   env = [
@@ -416,11 +426,11 @@ resource "docker_container" "miniflux_db" {
   ]
 
   networks_advanced {
-    name = "${docker_network.internal_network.name}"
+    name = docker_network.internal_network.name
   }
 
   volumes {
-    volume_name    = "${docker_volume.miniflux_db.name}"
+    volume_name    = docker_volume.miniflux_db.name
     container_path = "/var/lib/postgresql/data"
   }
 }
@@ -438,8 +448,8 @@ resource "random_string" "miniflux_db_password" {
 # ==============
 
 resource "docker_container" "standardnotes_db" {
-  image = "${docker_image.mysql.latest}"
-  name  = "${local.db_host_standardnotes}"
+  image = docker_image.mysql.latest
+  name  = local.db_host_standardnotes
   start = true
 
   env = [
@@ -454,11 +464,11 @@ resource "docker_container" "standardnotes_db" {
   ]
 
   networks_advanced {
-    name = "${docker_network.internal_network.name}"
+    name = docker_network.internal_network.name
   }
 
   volumes {
-    volume_name    = "${docker_volume.standardnotes_db.name}"
+    volume_name    = docker_volume.standardnotes_db.name
     container_path = "/var/lib/mysql"
   }
 }
@@ -479,18 +489,18 @@ resource "docker_container" "wallabag_redis" {
   # Redis is only used for data imports:
   # https://doc.wallabag.org/en/user/import/
 
-  image = "${docker_image.redis.latest}"
-  name  = "${local.redis_host_wallabag}"
+  image = docker_image.redis.latest
+  name  = local.redis_host_wallabag
   start = true
 
   networks_advanced {
-    name = "${docker_network.internal_network.name}"
+    name = docker_network.internal_network.name
   }
 }
 
 resource "docker_container" "wallabag_db" {
-  image = "${docker_image.postgresql.latest}"
-  name  = "${local.db_host_wallabag}"
+  image = docker_image.postgresql.latest
+  name  = local.db_host_wallabag
   start = true
 
   env = [
@@ -506,11 +516,11 @@ resource "docker_container" "wallabag_db" {
   ]
 
   networks_advanced {
-    name = "${docker_network.internal_network.name}"
+    name = docker_network.internal_network.name
   }
 
   volumes {
-    volume_name    = "${docker_volume.wallabag_db.name}"
+    volume_name    = docker_volume.wallabag_db.name
     container_path = "/var/lib/postgresql/data"
   }
 }
