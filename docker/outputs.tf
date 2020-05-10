@@ -3,17 +3,17 @@
 # =========
 
 output "kanboard_db_password" {
-  value = local.db_password_kanboard
+  value = local.db_kanboard_password
 }
 
 output "miniflux_db_password" {
-  value = local.db_password_miniflux
+  value = local.db_miniflux_password
 }
 
 output "standardnotes_db_password" {
-  value = local.db_password_standardnotes
+  value = local.db_standardnotes_password
 }
 
 output "wallabag_db_password" {
-  value = local.db_password_wallabag
+  value = local.db_wallabag_password
 }

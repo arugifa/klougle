@@ -12,8 +12,7 @@ jobs:
         - sudo mv /tmp/terraform /usr/local/bin/
 
       script:
-        - docker/tests/setup.sh
-        - docker/tests/suite.sh
+        - docker/tests/setup.sh && docker/tests/suite.sh
         - docker/tests/cleanup.sh
 
       addons:

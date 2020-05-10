@@ -30,15 +30,117 @@ resource "docker_network" "internal_network" {
 # Reverse Proxy
 # =============
 
-resource "docker_image" "nginx" {
-  name          = data.docker_registry_image.nginx.name
-  pull_triggers = [data.docker_registry_image.nginx.sha256_digest]
+resource "docker_image" "traefik" {
+  name          = data.docker_registry_image.traefik.name
+  pull_triggers = [data.docker_registry_image.traefik.sha256_digest]
 }
 
-resource "docker_container" "nginx" {
-  image = docker_image.nginx.latest
-  name  = "nginx"
+resource "docker_container" "traefik_http" {
+  count = var.host == "localhost" ? 1 : 0
+
+  image = docker_image.traefik.latest
+  name  = "traefik"
   start = true
+
+  # Configuration
+
+  command = [
+    # Use Docker.
+    "--providers.docker=true",
+
+    # Disable dashboard.
+    #
+    # TODO: Enable dashboard, once MFA is set up with Authelia (05/2020)
+    #
+    # Otherwise, the only way to secure dashboard access is with Basic Auth,
+    # and a password encrypted with Bcrypt. However, doing so would make Terraform
+    # detecting new changes everytime running `terraform apply`.
+    # For more info: https://www.terraform.io/docs/configuration/functions/bcrypt.html
+    "--api.dashboard=false",
+
+    # Configure HTTP.
+    #
+    # TODO: Enable HTTPs also in CI pipeline, with Let's Encrypt staging endpoint? (05/2020)
+    "--entrypoints.http=true",
+    "--entrypoints.http.address=:80",
+
+    # Enable logging.
+    "--log=true",
+    "--log.level=INFO",
+  ]
+
+  volumes {
+    # Give access to Docker's socket, to discover service containers.
+    host_path      = "/var/run/docker.sock"
+    container_path = "/var/run/docker.sock"
+    read_only      = true
+  }
+
+  # Networking
+
+  ports {
+    internal = 80
+    external = 80
+  }
+
+  networks_advanced {
+    # To be reachable from Internet, using the default Docker network.
+    name = "bridge"
+  }
+
+  networks_advanced {
+    # To connect with other containers.
+    name = docker_network.internal_network.name
+  }
+}
+
+resource "docker_container" "traefik_https" {
+  count = var.host == "localhost" ? 0 : 1
+
+  image = docker_image.traefik.latest
+  name  = "traefik"
+  start = true
+
+  # Configuration
+
+  command = [
+    # Use Docker.
+    "--providers.docker=true",
+
+    # Disable dashboard.
+    "--api.dashboard=false",
+
+    # Configure HTTP.
+    "--entrypoints.http=true",
+    "--entrypoints.http.address=:80",
+    "--entrypoints.http.http.redirections.entrypoint.to=https",
+
+    # Configure HTTPs.
+    "--entrypoints.https=true",
+    "--entrypoints.https.address=:443",
+
+    # Configure Let's Encrypt.
+    "--certificatesResolvers.letsencrypt.acme.email=${var.letsencrypt_email}",
+    "--certificatesResolvers.letsencrypt.acme.httpChallenge.entryPoint=http",
+
+    # Enable logging.
+    "--log=true",
+    "--log.level=INFO",
+  ]
+
+  volumes {
+    # Give access to Docker's socket, to discover service containers.
+    host_path      = "/var/run/docker.sock"
+    container_path = "/var/run/docker.sock"
+    read_only      = true
+  }
+
+  volumes {
+    volume_name    = docker_volume.traefik_certificates.name
+    container_path = "/etc/traefik/acme"
+  }
+
+  # Networking
 
   ports {
     internal = 80
@@ -59,63 +161,10 @@ resource "docker_container" "nginx" {
     # To connect with other containers.
     name = docker_network.internal_network.name
   }
-
-  volumes {
-    # Give access to Docker's socket, to discover service containers.
-    host_path      = "/var/run/docker.sock"
-    container_path = "/tmp/docker.sock"
-    read_only      = true
-  }
-
-  volumes {
-    # Used by Nginx Let's Encrypt,
-    # to store the certificates, private keys, and ACME account keys.
-    container_path = "/etc/nginx/certs"
-  }
-
-  volumes {
-    # Used by Nginx Let's Encrypt,
-    # to let Nginx serving the http-01 challenge files to Let's Encrypt.
-    container_path = "/etc/nginx/vhost.d"
-  }
-
-  volumes {
-    # Used by Nginx Let's Encrypt,
-    # to store the http-01 challenge files.
-    container_path = "/usr/share/nginx/html"
-  }
 }
 
-# Let's Encrypt
-# =============
-
-resource "docker_image" "nginx_letsencrypt" {
-  count = var.host == "localhost" ? 0 : 1
-  name  = "jrcs/letsencrypt-nginx-proxy-companion:${local.version_nginx_letsencrypt}"
-}
-
-resource "docker_container" "nginx_letsencrypt" {
-  count = var.host == "localhost" ? 0 : 1
-
-  image = docker_image.nginx_letsencrypt[0].latest
-  name  = "nginx_letsencrypt"
-  start = true
-
-  env = [
-    "DEFAULT_EMAIL=${var.letsencrypt_email}",
-  ]
-
-  volumes {
-    # Give access to Docker's socket, to discover service containers.
-    host_path      = "/var/run/docker.sock"
-    container_path = "/var/run/docker.sock"
-    read_only      = true
-  }
-
-  volumes {
-    # Store certificates, keys and challenge files inside the Nginx container.
-    from_container = docker_container.nginx.name
-  }
+resource "docker_volume" "traefik_certificates" {
+  name = "traefik_certificates"
 }
 
 # ========
@@ -134,22 +183,46 @@ resource "docker_container" "kanboard" {
   name  = "kanboard"
   start = true
 
-  env = [
-    # Reverse Proxy
-    "VIRTUAL_HOST=${local.domain_tasks}",
-    "LETSENCRYPT_HOST=${local.domain_tasks}",
+  # Configuration
 
-    # Kanboard Database
-    "DATABASE_URL=${local.db_url_kanboard}",
+  env = [
+    "DATABASE_URL=${local.db_kanboard_url}",
   ]
+
+  volumes {
+    volume_name    = docker_volume.kanboard_data.name
+    container_path = "/var/www/app/data"
+  }
+
+  # Reverse Proxy
 
   networks_advanced {
     name = docker_network.internal_network.name
   }
 
-  volumes {
-    volume_name    = docker_volume.kanboard_data.name
-    container_path = "/var/www/app/data"
+  labels {
+    label = "traefik.enable"
+    value = "true"
+  }
+
+  labels {
+    label = "traefik.http.routers.tasks.rule"
+    value = "Host(`${local.domain_tasks}`)"
+  }
+
+  labels {
+    label = "traefik.http.routers.tasks.entrypoints"
+    value = "https"
+  }
+
+  labels {
+    label = "traefik.http.routers.tasks.tls"
+    value = "true"
+  }
+
+  labels {
+    label = "traefik.http.routers.tasks.tls.certresolver"
+    value = "letsencrypt"
   }
 }
 
@@ -172,24 +245,49 @@ resource "docker_container" "miniflux" {
   # Wait for database's container to start (dumb implementation™).
   restart = "on-failure"
 
-  env = [
-    # Reverse Proxy
-    "VIRTUAL_HOST=${local.domain_news}",
-    "LETSENCRYPT_HOST=${local.domain_news}",
+  # Configuration
 
-    # Miniflux Database
-    "DATABASE_URL=${local.db_url_miniflux}",
+  env = [
+    # Database:
+    "DATABASE_URL=${local.db_miniflux_url}",
     "RUN_MIGRATIONS=1",
 
-    # Miniflux Setup
+    # Setup:
     # Create admin user if it doesn't already exist.
     "CREATE_ADMIN=1",
-    "ADMIN_USERNAME=${local.default_user_miniflux}",
-    "ADMIN_PASSWORD=${local.default_password_miniflux}",
+    "ADMIN_USERNAME=${local.user_miniflux}",
+    "ADMIN_PASSWORD=${local.password_miniflux}",
   ]
+
+  # Reverse Proxy
 
   networks_advanced {
     name = docker_network.internal_network.name
+  }
+
+  labels {
+    label = "traefik.enable"
+    value = "true"
+  }
+
+  labels {
+    label = "traefik.http.routers.news.rule"
+    value = "Host(`${local.domain_news}`)"
+  }
+
+  labels {
+    label = "traefik.http.routers.news.entrypoints"
+    value = "https"
+  }
+
+  labels {
+    label = "traefik.http.routers.news.tls"
+    value = "true"
+  }
+
+  labels {
+    label = "traefik.http.routers.news.tls.certresolver"
+    value = "letsencrypt"
   }
 }
 
@@ -205,17 +303,41 @@ resource "docker_container" "standardnotes_web" {
   name  = "standardnotes_web"
   start = true
 
-  env = [
-    # Reverse Proxy
-    "VIRTUAL_HOST=${local.domain_notes_webui}",
-    "LETSENCRYPT_HOST=${local.domain_notes_webui}",
+  # Configuration
 
-    # Standard Notes Server
+  env = [
     "SF_DEFAULT_SERVER=${var.host == "localhost" ? "http" : "https"}://rtfm.${local.domain_notes_webui}",
   ]
 
+  # Reverse Proxy
+
   networks_advanced {
     name = docker_network.internal_network.name
+  }
+
+  labels {
+    label = "traefik.enable"
+    value = "true"
+  }
+
+  labels {
+    label = "traefik.http.routers.notes_webui.rule"
+    value = "Host(`${local.domain_notes_webui}`)"
+  }
+
+  labels {
+    label = "traefik.http.routers.notes_webui.entrypoints"
+    value = "https"
+  }
+
+  labels {
+    label = "traefik.http.routers.notes_webui.tls"
+    value = "true"
+  }
+
+  labels {
+    label = "traefik.http.routers.notes_webui.tls.certresolver"
+    value = "letsencrypt"
   }
 }
 
@@ -231,34 +353,62 @@ resource "docker_container" "standardnotes_server" {
   # Wait for database's container to start (dumb implementation™).
   restart = "on-failure"
 
+  # Configuration
+
   command = [
     "/bin/sh", "-c",
-    # Create the database if not already exists.
-    # Then, migrate the database and start the server.
+    # Create database if not already exists.
+    # Then, migrate database and start the server.
     "bundle exec rails db:create; bundle exec rails db:migrate && bundle exec rails s -b 0.0.0.0",
   ]
 
   env = [
-    # Reverse Proxy
-    "VIRTUAL_HOST=${local.domain_notes_server}",
-    "VIRTUAL_PORT=3000",
-
-    "LETSENCRYPT_HOST=${local.domain_notes_server}",
-
-    # Standard Notes Server Setup
+    # Setup:
     "RAILS_ENV=production",
     "RAILS_SERVE_STATIC_FILES=true",
     "SECRET_KEY_BASE=${random_string.standardnotes_secret_key.result}",
 
-    # Standard Notes Database
-    "DB_HOST=${local.db_host_standardnotes}",
-    "DB_DATABASE=${local.db_name_standardnotes}",
-    "DB_USERNAME=${local.db_user_standardnotes}",
-    "DB_PASSWORD=${local.db_password_standardnotes}",
+    # Database:
+    "DB_HOST=${local.db_standardnotes_host}",
+    "DB_DATABASE=${local.db_standardnotes_name}",
+    "DB_USERNAME=${local.db_standardnotes_user}",
+    "DB_PASSWORD=${local.db_standardnotes_password}",
   ]
+
+  # Reverse Proxy
 
   networks_advanced {
     name = docker_network.internal_network.name
+  }
+
+  labels {
+    label = "traefik.enable"
+    value = "true"
+  }
+
+  labels {
+    label = "traefik.http.routers.notes_server.rule"
+    value = "Host(`${local.domain_notes_server}`)"
+  }
+
+  labels {
+    label = "traefik.http.routers.notes_server.entrypoints"
+    value = "https"
+  }
+
+  labels {
+    label = "traefik.http.routers.notes_server.tls"
+    value = "true"
+  }
+
+  labels {
+    label = "traefik.http.routers.notes_server.tls.certresolver"
+    value = "letsencrypt"
+  }
+
+  labels {
+    label = "traefik.http.services.notes_server.loadbalancer.server.port"
+    value = "3000"
   }
 }
 
@@ -287,12 +437,9 @@ resource "docker_container" "wallabag" {
   # Wait for database's container to start (dumb implementation™).
   restart = "on-failure"
 
-  env = [
-    # Reverse Proxy
-    "VIRTUAL_HOST=${local.domain_library}",
-    "LETSENCRYPT_HOST=${local.domain_library}",
+  # Configuration
 
-    # Wallabag Configuration
+  env = [
     # Base domain for asset URLs.
     "SYMFONY__ENV__DOMAIN_NAME=${var.host == "localhost" ? "http" : "https"}://${local.domain_library}",
     # Disable user registration.
@@ -300,14 +447,14 @@ resource "docker_container" "wallabag" {
     # Don't use the default Wallabag secret.
     "SYMFONY__ENV__SECRET=${random_string.wallabag_secret_key.result}",
 
-    # Wallabag Databases
-    "SYMFONY__ENV__REDIS_HOST=${local.redis_host_wallabag}",
+    # Wallabag Databases:
+    "SYMFONY__ENV__REDIS_HOST=${local.redis_wallabag_host}",
 
     "SYMFONY__ENV__DATABASE_DRIVER=pdo_pgsql",
-    "SYMFONY__ENV__DATABASE_HOST=${local.db_host_wallabag}",
-    "SYMFONY__ENV__DATABASE_NAME=${local.db_name_wallabag}",
-    "SYMFONY__ENV__DATABASE_USER=${local.db_user_wallabag}",
-    "SYMFONY__ENV__DATABASE_PASSWORD=${local.db_password_wallabag}",
+    "SYMFONY__ENV__DATABASE_HOST=${local.db_wallabag_host}",
+    "SYMFONY__ENV__DATABASE_NAME=${local.db_wallabag_name}",
+    "SYMFONY__ENV__DATABASE_USER=${local.db_wallabag_user}",
+    "SYMFONY__ENV__DATABASE_PASSWORD=${local.db_wallabag_password}",
 
     # XXX: Set absolutely the DB's default port! (11/2019)
     #
@@ -334,17 +481,44 @@ resource "docker_container" "wallabag" {
 
     # Only used to provision database
     # when starting the container for the first time.
-    "POSTGRES_USER=${local.db_user_wallabag}",
-    "POSTGRES_PASSWORD=${local.db_password_wallabag}",
+    "POSTGRES_USER=${local.db_wallabag_user}",
+    "POSTGRES_PASSWORD=${local.db_wallabag_password}",
   ]
+
+  volumes {
+    volume_name    = docker_volume.wallabag_images.name
+    container_path = "/var/www/wallabag/web/assets/images"
+  }
+
+  # Reverse Proxy
 
   networks_advanced {
     name = docker_network.internal_network.name
   }
 
-  volumes {
-    volume_name    = docker_volume.wallabag_images.name
-    container_path = "/var/www/wallabag/web/assets/images"
+  labels {
+    label = "traefik.enable"
+    value = "true"
+  }
+
+  labels {
+    label = "traefik.http.routers.library.rule"
+    value = "Host(`${local.domain_library}`)"
+  }
+
+  labels {
+    label = "traefik.http.routers.library.entrypoints"
+    value = "https"
+  }
+
+  labels {
+    label = "traefik.http.routers.library.tls"
+    value = "true"
+  }
+
+  labels {
+    label = "traefik.http.routers.library.tls.certresolver"
+    value = "letsencrypt"
   }
 }
 
@@ -383,13 +557,13 @@ resource "docker_image" "redis" {
 
 resource "docker_container" "kanboard_db" {
   image = docker_image.postgresql.latest
-  name  = local.db_host_kanboard
+  name  = local.db_kanboard_host
   start = true
 
   env = [
-    "POSTGRES_DB=${local.db_name_kanboard}",
-    "POSTGRES_USER=${local.db_user_kanboard}",
-    "POSTGRES_PASSWORD=${local.db_password_kanboard}",
+    "POSTGRES_DB=${local.db_kanboard_name}",
+    "POSTGRES_USER=${local.db_kanboard_user}",
+    "POSTGRES_PASSWORD=${local.db_kanboard_password}",
   ]
 
   networks_advanced {
@@ -416,13 +590,13 @@ resource "random_string" "kanboard_db_password" {
 
 resource "docker_container" "miniflux_db" {
   image = docker_image.postgresql.latest
-  name  = local.db_host_miniflux
+  name  = local.db_miniflux_host
   start = true
 
   env = [
-    "POSTGRES_DB=${local.db_name_miniflux}",
-    "POSTGRES_USER=${local.db_user_miniflux}",
-    "POSTGRES_PASSWORD=${local.db_password_miniflux}",
+    "POSTGRES_DB=${local.db_miniflux_name}",
+    "POSTGRES_USER=${local.db_miniflux_user}",
+    "POSTGRES_PASSWORD=${local.db_miniflux_password}",
   ]
 
   networks_advanced {
@@ -449,18 +623,18 @@ resource "random_string" "miniflux_db_password" {
 
 resource "docker_container" "standardnotes_db" {
   image = docker_image.mysql.latest
-  name  = local.db_host_standardnotes
+  name  = local.db_standardnotes_host
   start = true
 
   env = [
-    "MYSQL_DATABASE=${local.db_name_standardnotes}",
-    "MYSQL_USER=${local.db_user_standardnotes}",
-    "MYSQL_PASSWORD=${local.db_password_standardnotes}",
+    "MYSQL_DATABASE=${local.db_standardnotes_name}",
+    "MYSQL_USER=${local.db_standardnotes_user}",
+    "MYSQL_PASSWORD=${local.db_standardnotes_password}",
 
     # The MySQL image requires the root's password to be set manually.
     # We use the same password than the default user, because there is
     # no reason to use a different one...
-    "MYSQL_ROOT_PASSWORD=${local.db_password_standardnotes}",
+    "MYSQL_ROOT_PASSWORD=${local.db_standardnotes_password}",
   ]
 
   networks_advanced {
@@ -490,7 +664,7 @@ resource "docker_container" "wallabag_redis" {
   # https://doc.wallabag.org/en/user/import/
 
   image = docker_image.redis.latest
-  name  = local.redis_host_wallabag
+  name  = local.redis_wallabag_host
   start = true
 
   networks_advanced {
@@ -500,7 +674,7 @@ resource "docker_container" "wallabag_redis" {
 
 resource "docker_container" "wallabag_db" {
   image = docker_image.postgresql.latest
-  name  = local.db_host_wallabag
+  name  = local.db_wallabag_host
   start = true
 
   env = [
@@ -511,8 +685,8 @@ resource "docker_container" "wallabag_db" {
     #
     #   relation "wallabag_craue_config_setting" does not exist
     #
-    "POSTGRES_USER=${local.db_user_wallabag}",
-    "POSTGRES_PASSWORD=${local.db_password_wallabag}",
+    "POSTGRES_USER=${local.db_wallabag_user}",
+    "POSTGRES_PASSWORD=${local.db_wallabag_password}",
   ]
 
   networks_advanced {

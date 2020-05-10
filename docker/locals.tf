@@ -8,14 +8,6 @@ locals {
   docker_unix_socket = "unix:///var/run/docker.sock"
 }
 
-# ========================
-# Networking Configuration
-# ========================
-
-locals {
-  version_nginx_letsencrypt = "v1.12"
-}
-
 # ======================
 # Service Configurations
 # ======================
@@ -39,9 +31,9 @@ locals {
 locals {
   domain_news = "news.${local.domain}"
 
-  version_miniflux          = "2.0.13"
-  default_user_miniflux     = "admin"
-  default_password_miniflux = "password"
+  version_miniflux  = "2.0.13"
+  user_miniflux     = "admin"
+  password_miniflux = "password"
 }
 
 # Standard Notes
@@ -53,6 +45,13 @@ locals {
 
   version_standardnotes_web    = "3.0.14"
   version_standardnotes_server = "0.0.0-rc.2019.08.02"
+}
+
+# Traefik
+# =======
+
+locals {
+  domain_dashboard = "dashboard.${local.domain}"
 }
 
 # Wallabag
@@ -72,32 +71,32 @@ locals {
 # ========
 
 locals {
-  db_name_kanboard     = "kanboard"
-  db_user_kanboard     = "klougle"
-  db_password_kanboard = random_string.kanboard_db_password.result
-  db_host_kanboard     = "kanboard_db"
-  db_url_kanboard      = "postgres://${local.db_user_kanboard}:${local.db_password_kanboard}@${local.db_host_kanboard}/${local.db_name_kanboard}"
+  db_kanboard_name     = "kanboard"
+  db_kanboard_user     = "klougle"
+  db_kanboard_password = random_string.kanboard_db_password.result
+  db_kanboard_host     = "kanboard_db"
+  db_kanboard_url      = "postgres://${local.db_kanboard_user}:${local.db_kanboard_password}@${local.db_kanboard_host}/${local.db_kanboard_name}"
 }
 
 # Miniflux
 # ========
 
 locals {
-  db_name_miniflux     = "miniflux"
-  db_user_miniflux     = "klougle"
-  db_password_miniflux = random_string.miniflux_db_password.result
-  db_host_miniflux     = "miniflux_db"
-  db_url_miniflux      = "postgres://${local.db_user_miniflux}:${local.db_password_miniflux}@${local.db_host_miniflux}/${local.db_name_miniflux}?sslmode=disable"
+  db_miniflux_name     = "miniflux"
+  db_miniflux_user     = "klougle"
+  db_miniflux_password = random_string.miniflux_db_password.result
+  db_miniflux_host     = "miniflux_db"
+  db_miniflux_url      = "postgres://${local.db_miniflux_user}:${local.db_miniflux_password}@${local.db_miniflux_host}/${local.db_miniflux_name}?sslmode=disable"
 }
 
 # Standard Notes
 # ==============
 
 locals {
-  db_name_standardnotes     = "standardnotes"
-  db_user_standardnotes     = "klougle"
-  db_password_standardnotes = random_string.standardnotes_db_password.result
-  db_host_standardnotes     = "standardnotes_db"
+  db_standardnotes_name     = "standardnotes"
+  db_standardnotes_user     = "klougle"
+  db_standardnotes_password = random_string.standardnotes_db_password.result
+  db_standardnotes_host     = "standardnotes_db"
 }
 
 # Wallabag
@@ -111,10 +110,10 @@ locals {
   #
   #   relation "wallabag_craue_config_setting" does not exist
   #
-  db_name_wallabag     = "wallabag"
-  db_user_wallabag     = "klougle"
-  db_password_wallabag = random_string.wallabag_db_password.result
-  db_host_wallabag     = "wallabag_db"
+  db_wallabag_name     = "wallabag"
+  db_wallabag_user     = "klougle"
+  db_wallabag_password = random_string.wallabag_db_password.result
+  db_wallabag_host     = "wallabag_db"
 
-  redis_host_wallabag = "wallabag_redis"
+  redis_wallabag_host = "wallabag_redis"
 }
