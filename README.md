@@ -71,9 +71,6 @@ Cloud solution™.
 Kloügle depends on [Terraform](https://www.terraform.io/) to set-up your server.
 This great tool makes possible to deploy Kloügle in many different environments.
 
-**Warning: Kloügle is currently [not compatible](https://github.com/arugifa/klougle/issues/15)
-with the latest version of Terraform (0.12), which introduced many major changes**
-
 
 ##### On Linux
 
@@ -82,9 +79,8 @@ If it's your case, you have to install it manually:
 
 ```sh
 # First, download Terraform.
-wget https://releases.hashicorp.com/terraform/0.11.14/terraform_0.11.14_linux_amd64.zip
-unzip terraform_0.11.14_linux_amd64.zip -d /tmp
-rm terraform_0.11.14_linux_amd64.zip
+wget https://releases.hashicorp.com/terraform/0.12.24/terraform_0.12.24_linux_amd64.zip
+unzip terraform_0.12.24_linux_amd64.zip -d /tmp
 
 # Then, install Terraform on your system.
 sudo mv /tmp/terraform /usr/local/bin/
@@ -93,18 +89,14 @@ sudo mv /tmp/terraform /usr/local/bin/
 
 ##### On macOS
 
-You cannot use [Homebrew](https://brew.sh/), as you need to install an older
-version of Terraform (0.11):
+Lucky you: if you already use [Homebrew](https://brew.sh/) to manage your packages,
+then just type:
 
 ```sh
-# First, download Terraform.
-curl -O https://releases.hashicorp.com/terraform/0.11.14/terraform_0.11.14_darwin_amd64.zip
-unzip terraform_0.11.14_darwin_amd64.zip -d /tmp
-rm terraform_0.11.14_darwin_amd64.zip
-
-# Then, install Terraform on your system.
-sudo mv /tmp/terraform /usr/local/bin/
+brew install terraform
 ```
+
+If you don't use Homebew yet, well... you really should 😋
 
 
 #### DNS Records
@@ -282,8 +274,7 @@ unfortunately no choice but to migrate your zone to another provider...
 
 If your browser keeps saying your SSL certificates are invalid when connecting
 to Kloügle services, you should probably wait first a couple of minutes, and
-give time to Kloügle to request certificates to
-[Let's Encrypt](https://letsencrypt.org/).
+give time to Kloügle to request certificates to [Let's Encrypt](https://letsencrypt.org/).
 
 However, if the problem persists, it probably means that you have hit Let's
 Encrypt [rate limits](https://letsencrypt.org/docs/rate-limits/).
