@@ -281,8 +281,12 @@ unfortunately no choice but to migrate your zone to another provider...
 #### Rate Limits
 
 If your browser keeps saying your SSL certificates are invalid when connecting
-to Kloügle services, you probably have hit Let's Encrypt
-[rate limits](https://letsencrypt.org/docs/rate-limits/).
+to Kloügle services, you should probably wait first a couple of minutes, and
+give time to Kloügle to request certificates to
+[Let's Encrypt](https://letsencrypt.org/).
+
+However, if the problem persists, it probably means that you have hit Let's
+Encrypt [rate limits](https://letsencrypt.org/docs/rate-limits/).
 
 This can happen when your Cloud provider doesn't assign you an unique external
 IP, but instead gives you one which is shared among many customers.
@@ -293,26 +297,11 @@ proxy's logs:
 ```sh
 $ ssh rancher@<SERVER_FQDN>  # If you run Kloügle on a remote virtual machine
 
-$ docker logs -f nginx_letsencrypt
-
-Info: Custom Diffie-Hellman group found, generation skipped.
-Reloading nginx proxy (nginx)...
-2019/11/17 17:15:12 Contents of /etc/nginx/conf.d/default.conf did not change. Skipping notification ''
-2019/11/17 17:15:12 [notice] 243#243: signal process started
-2019/11/17 17:15:12 Generated '/app/letsencrypt_service_data' from 9 containers
-2019/11/17 17:15:12 Running '/app/signal_le_service'
-2019/11/17 17:15:12 Watching docker events
-2019/11/17 17:15:13 Contents of /app/letsencrypt_service_data did not change. Skipping notification '/app/signal_le_service'
-/etc/nginx/certs/<SERVICE_DOMAIN> /app
-Creating/renewal <SERVICE_DOMAIN> certificates... (<SERVICE_DOMAIN>)
-2019-11-17 17:15:14,725:INFO:simp_le:1323: Generating new account key
-ACME server returned an error: urn:acme:error:serverInternal :: The server experienced an internal error :: The service is down for maintenance or had an internal error. Check https://letsencrypt.status.io/ for more details.
-
-Sleep for 3600s
+$ docker logs -f traefik
 ```
 
-You better wait for the next attempt to generate SSL certificates, which
-happens every hour.
+You better wait for the next successful attempt to generate SSL certificates,
+which should happen at some point...
 
 
 ## Configuring Kloügle

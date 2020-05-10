@@ -65,8 +65,9 @@ resource "docker_container" "traefik_http" {
     "--entrypoints.http.address=:80",
 
     # Enable logging.
+    # Only DEBUG level displays incoming requests and interactions with Let's Encrypt.
     "--log=true",
-    "--log.level=INFO",
+    "--log.level=DEBUG",
   ]
 
   volumes {
@@ -124,8 +125,9 @@ resource "docker_container" "traefik_https" {
     "--certificatesResolvers.letsencrypt.acme.httpChallenge.entryPoint=http",
 
     # Enable logging.
+    # Only DEBUG level displays incoming requests and interactions with Let's Encrypt.
     "--log=true",
-    "--log.level=INFO",
+    "--log.level=DEBUG",
   ]
 
   volumes {
