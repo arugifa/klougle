@@ -18,6 +18,8 @@ assert_service_is_online () {
     done
 }
 
+assert_service_is_online "Finance"               "finance.localhost"
+
 # TODO: Test assets are correctly loaded (HTTP status code 200) (11/2019)
 #
 # When creating Wallabag container, if SYMFONY__ENV__DOMAIN_NAME

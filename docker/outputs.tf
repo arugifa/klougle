@@ -2,6 +2,10 @@
 # Passwords
 # =========
 
+output "firefly_db_password" {
+  value = local.db_firefly_password
+}
+
 output "kanboard_db_password" {
   value = local.db_kanboard_password
 }

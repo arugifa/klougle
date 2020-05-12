@@ -173,11 +173,90 @@ resource "docker_volume" "traefik_certificates" {
 # Services
 # ========
 
+# Firefly
+# =======
+
+resource "docker_image" "firefly" {
+  name = "jc5x/firefly-iii:release-${local.version_firefly}"
+}
+
+resource "docker_container" "firefly" {
+  image = docker_image.firefly.latest
+  name  = "firefly"
+  start = true
+
+  # Configuration
+
+  env = [
+    # Application:
+    "APP_KEY=${random_string.firefly_secret_key.result}",
+
+    # Reverse Proxy:
+    "APP_URL=${var.host == "localhost" ? "http" : "https"}://${local.domain_finance}",
+    "TRUSTED_PROXIES=**",
+
+    # Database:
+    "DB_HOST=${local.db_firefly_host}",
+    "DB_PORT=${local.db_firefly_port}",
+    "DB_DATABASE=${local.db_firefly_database}",
+    "DB_USERNAME=${local.db_firefly_user}",
+    "DB_PASSWORD=${local.db_firefly_password}",
+  ]
+
+  volumes {
+    volume_name    = docker_volume.firefly_data.name
+    container_path = "/var/www/firefly-iii/storage"
+  }
+
+  # Reverse Proxy
+
+  networks_advanced {
+    name = docker_network.internal_network.name
+  }
+
+  labels {
+    label = "traefik.enable"
+    value = "true"
+  }
+
+  labels {
+    label = "traefik.http.routers.finance.rule"
+    value = "Host(`${local.domain_finance}`)"
+  }
+
+  labels {
+    label = "traefik.http.routers.finance.entrypoints"
+    value = "https"
+  }
+
+  labels {
+    label = "traefik.http.routers.finance.tls"
+    value = "true"
+  }
+
+  labels {
+    label = "traefik.http.routers.finance.tls.certresolver"
+    value = "letsencrypt"
+  }
+}
+
+resource "docker_volume" "firefly_data" {
+  name = "firefly_data"
+}
+
+resource "random_string" "firefly_secret_key" {
+  # They say in the documentation: "It should be a random string of exactly 32 characters"
+  length = 32
+
+  # Web framework don't like special characters usually.
+  special = false
+}
+
 # Kanboard
 # ========
 
 resource "docker_image" "kanboard" {
-  name = "kanboard/kanboard:${local.version_kanboard}"
+  name = "kanboard/kanboard:v${local.version_kanboard}"
 }
 
 resource "docker_container" "kanboard" {
@@ -372,7 +451,7 @@ resource "docker_container" "standardnotes_server" {
 
     # Database:
     "DB_HOST=${local.db_standardnotes_host}",
-    "DB_DATABASE=${local.db_standardnotes_name}",
+    "DB_DATABASE=${local.db_standardnotes_database}",
     "DB_USERNAME=${local.db_standardnotes_user}",
     "DB_PASSWORD=${local.db_standardnotes_password}",
   ]
@@ -454,7 +533,7 @@ resource "docker_container" "wallabag" {
 
     "SYMFONY__ENV__DATABASE_DRIVER=pdo_pgsql",
     "SYMFONY__ENV__DATABASE_HOST=${local.db_wallabag_host}",
-    "SYMFONY__ENV__DATABASE_NAME=${local.db_wallabag_name}",
+    "SYMFONY__ENV__DATABASE_NAME=${local.db_wallabag_database}",
     "SYMFONY__ENV__DATABASE_USER=${local.db_wallabag_user}",
     "SYMFONY__ENV__DATABASE_PASSWORD=${local.db_wallabag_password}",
 
@@ -466,7 +545,7 @@ resource "docker_container" "wallabag" {
     #   port is of type <type 'str'> and we were unable to convert to int:
     #   invalid literal for int() with base 10: '~'
     #
-    "SYMFONY__ENV__DATABASE_PORT=5432",
+    "SYMFONY__ENV__DATABASE_PORT=${local.db_wallabag_port}",
 
     # XXX: Set absolutely the DB driver class! (11/2019)
     #
@@ -554,6 +633,39 @@ resource "docker_image" "redis" {
   pull_triggers = [data.docker_registry_image.redis.sha256_digest]
 }
 
+# Firefly
+# =======
+
+resource "docker_container" "firefly_db" {
+  image = docker_image.postgresql.latest
+  name  = local.db_firefly_host
+  start = true
+
+  env = [
+    "POSTGRES_DB=${local.db_firefly_database}",
+    "POSTGRES_USER=${local.db_firefly_user}",
+    "POSTGRES_PASSWORD=${local.db_firefly_password}",
+  ]
+
+  networks_advanced {
+    name = docker_network.internal_network.name
+  }
+
+  volumes {
+    volume_name    = docker_volume.firefly_db.name
+    container_path = "/var/lib/postgresql/data"
+  }
+}
+
+resource "docker_volume" "firefly_db" {
+  name = "firefly_db"
+}
+
+resource "random_string" "firefly_db_password" {
+  length  = 8
+  special = false
+}
+
 # Kanboard
 # ========
 
@@ -563,7 +675,7 @@ resource "docker_container" "kanboard_db" {
   start = true
 
   env = [
-    "POSTGRES_DB=${local.db_kanboard_name}",
+    "POSTGRES_DB=${local.db_kanboard_database}",
     "POSTGRES_USER=${local.db_kanboard_user}",
     "POSTGRES_PASSWORD=${local.db_kanboard_password}",
   ]
@@ -596,7 +708,7 @@ resource "docker_container" "miniflux_db" {
   start = true
 
   env = [
-    "POSTGRES_DB=${local.db_miniflux_name}",
+    "POSTGRES_DB=${local.db_miniflux_database}",
     "POSTGRES_USER=${local.db_miniflux_user}",
     "POSTGRES_PASSWORD=${local.db_miniflux_password}",
   ]
@@ -629,7 +741,7 @@ resource "docker_container" "standardnotes_db" {
   start = true
 
   env = [
-    "MYSQL_DATABASE=${local.db_standardnotes_name}",
+    "MYSQL_DATABASE=${local.db_standardnotes_database}",
     "MYSQL_USER=${local.db_standardnotes_user}",
     "MYSQL_PASSWORD=${local.db_standardnotes_password}",
 

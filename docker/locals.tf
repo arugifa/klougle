@@ -8,101 +8,87 @@ locals {
   docker_unix_socket = "unix:///var/run/docker.sock"
 }
 
+# ===============
+# Service Domains
+# ===============
+
+locals {
+  domain = replace(var.host, "/(\\w+\\.)(\\w+\\.)(\\w+)/", "$2$3")
+
+  domain_dashboard    = "dashboard.${local.domain}"
+  domain_finance      = "finance.${local.domain}"
+  domain_library      = "library.${local.domain}"
+  domain_news         = "news.${local.domain}"
+  domain_notes_webui  = "notes.${local.domain}"
+  domain_notes_server = "sync.${local.domain_notes_webui}"
+  domain_tasks        = "tasks.${local.domain}"
+}
+
 # ======================
 # Service Configurations
 # ======================
 
+# Firefly (Finance)
+# =================
+
 locals {
-  domain = replace(var.host, "/(\\w+\\.)(\\w+\\.)(\\w+)/", "$2$3")
+  version_firefly = "5.2.5"
+
+  db_firefly_database = "firefly"
+  db_firefly_user     = "firefly"
+  db_firefly_password = random_string.firefly_db_password.result
+  db_firefly_host     = "firefly_db"
+  db_firefly_port     = "5432"
 }
 
-# Kanboard
-# ========
+# Kanboard (Tasks)
+# ================
 
 locals {
-  domain_tasks = "tasks.${local.domain}"
+  version_kanboard = "1.2.7"
 
-  version_kanboard = "v1.2.7"
-}
-
-# Miniflux
-# ========
-
-locals {
-  domain_news = "news.${local.domain}"
-
-  version_miniflux  = "2.0.13"
-  user_miniflux     = "admin"
-  password_miniflux = "password"
-}
-
-# Standard Notes
-# ==============
-
-locals {
-  domain_notes_webui  = "notes.${local.domain}"
-  domain_notes_server = "sync.${local.domain_notes_webui}"
-
-  version_standardnotes_web    = "3.0.14"
-  version_standardnotes_server = "0.0.0-rc.2019.08.02"
-}
-
-# Traefik
-# =======
-
-locals {
-  domain_dashboard = "dashboard.${local.domain}"
-}
-
-# Wallabag
-# ========
-
-locals {
-  domain_library = "library.${local.domain}"
-
-  version_wallabag = "2.3.8"
-}
-
-# =======================
-# Database Configurations
-# =======================
-
-# Kanboard
-# ========
-
-locals {
-  db_kanboard_name     = "kanboard"
+  db_kanboard_database = "kanboard"
   db_kanboard_user     = "klougle"
   db_kanboard_password = random_string.kanboard_db_password.result
   db_kanboard_host     = "kanboard_db"
-  db_kanboard_url      = "postgres://${local.db_kanboard_user}:${local.db_kanboard_password}@${local.db_kanboard_host}/${local.db_kanboard_name}"
+  db_kanboard_url      = "postgres://${local.db_kanboard_user}:${local.db_kanboard_password}@${local.db_kanboard_host}/${local.db_kanboard_database}"
 }
 
-# Miniflux
-# ========
+# Miniflux (News)
+# ===============
 
 locals {
-  db_miniflux_name     = "miniflux"
+  version_miniflux  = "2.0.13"
+
+  user_miniflux     = "admin"
+  password_miniflux = "password"
+
+  db_miniflux_database = "miniflux"
   db_miniflux_user     = "klougle"
   db_miniflux_password = random_string.miniflux_db_password.result
   db_miniflux_host     = "miniflux_db"
-  db_miniflux_url      = "postgres://${local.db_miniflux_user}:${local.db_miniflux_password}@${local.db_miniflux_host}/${local.db_miniflux_name}?sslmode=disable"
+  db_miniflux_url      = "postgres://${local.db_miniflux_user}:${local.db_miniflux_password}@${local.db_miniflux_host}/${local.db_miniflux_database}?sslmode=disable"
 }
 
-# Standard Notes
-# ==============
+# Standard Notes (Notes)
+# ======================
 
 locals {
-  db_standardnotes_name     = "standardnotes"
+  version_standardnotes_web    = "3.0.14"
+  version_standardnotes_server = "0.0.0-rc.2019.08.02"
+
+  db_standardnotes_database = "standardnotes"
   db_standardnotes_user     = "klougle"
   db_standardnotes_password = random_string.standardnotes_db_password.result
   db_standardnotes_host     = "standardnotes_db"
 }
 
-# Wallabag
-# ========
+# Wallabag (Library)
+# ==================
 
 locals {
+  version_wallabag = "2.3.8"
+
   # XXX: Use different values for DB's name and user's name! (11/2019)
   #
   # Otherwise, an error appears in the logs when connecting
@@ -110,10 +96,11 @@ locals {
   #
   #   relation "wallabag_craue_config_setting" does not exist
   #
-  db_wallabag_name     = "wallabag"
+  db_wallabag_database = "wallabag"
   db_wallabag_user     = "klougle"
   db_wallabag_password = random_string.wallabag_db_password.result
   db_wallabag_host     = "wallabag_db"
+  db_wallabag_port     = "5432"
 
   redis_wallabag_host = "wallabag_redis"
 }

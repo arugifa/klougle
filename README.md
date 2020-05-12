@@ -20,7 +20,8 @@ Currently, here is what you can expect to find in Kloügle:
 - a web **library** ([Wallabag](https://wallabag.org/)),
   like [Pocket](https://getpocket.com/),
 - a personal **task management** board ([Kanboard](https://kanboard.org/)),
-  like [Trello](https://trello.com/).
+  like [Trello](https://trello.com/),
+- a personal **finance manager** ([Firefly](https://www.firefly-iii.org/)).
 
 That's all? Yep, for now! 😀 The main focus has been to build Kloügle's
 foundations so far. But the following services will be available during the
@@ -107,6 +108,7 @@ records for every Kloügle service.
 
 As only a very few services are available for now, it's pretty simple:
 
+- `finance.<YOUR_DOMAIN>`
 - `library.<YOUR_DOMAIN>`
 - `news.<YOUR_DOMAIN>`
 - `notes.<YOUR_DOMAIN>`
@@ -119,7 +121,7 @@ However, if you only want to play with Kloügle locally, then the simplest optio
 is to update the `/etc/hosts` file of your machine. For example:
 
 ```ini
-127.0.0.1    news.localhost notes.localhost sync.notes.localhost tasks.localhost
+127.0.0.1    finance.localhost news.localhost notes.localhost sync.notes.localhost tasks.localhost
 ```
 
 
@@ -312,6 +314,7 @@ As Kloügle doesn't provide any central authentication system for the moment:
 
 For the following services, you have to create a new user by yourself:
 
+- **finance manager:** `https://finance.<YOUR_DOMAIN>/`
 - **notes application:** `https://notes.<YOUR_DOMAIN>/` (please update the server's
   URL when trying to register/sign in with `https://sync.notes.<YOUR_DOMAIN>/`;
   by default, a fake one is used to prevent anyone to create accounts on your
