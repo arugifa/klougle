@@ -193,6 +193,8 @@ resource "docker_container" "cozy" {
   ]
 
   env = [
+    "COUCHDB_USER=${local.cozy_db_user}",
+    "COUCHDB_PASSWORD=${local.cozy_db_password}",
     "COZY_ADMIN_PASSPHRASE=${random_string.cozy_admin_passphrase}",
     "OS_USERNAME=...",
     "OS_PASSWORD=...",
@@ -665,6 +667,11 @@ resource "random_string" "wallabag_secret_key" {
 # Databases
 # =========
 
+resource "docker_image" "couchdb" {
+  name          = data.docker_registry_image.couchdb.name
+  pull_triggers = [data.docker_registry_image.couchdb.sha256_digest]
+}
+
 resource "docker_image" "mysql" {
   name          = data.docker_registry_image.mysql.name
   pull_triggers = [data.docker_registry_image.mysql.sha256_digest]
@@ -678,6 +685,38 @@ resource "docker_image" "postgresql" {
 resource "docker_image" "redis" {
   name          = data.docker_registry_image.redis.name
   pull_triggers = [data.docker_registry_image.redis.sha256_digest]
+}
+
+# Cozy
+# ====
+
+resource "docker_container" "cozy_db" {
+  image = docker_image.cozy.latest
+  name  = local.db_cozy_host
+  start = true
+
+  env = [
+    "COUCHDB_USER=${local.cozy_db_user}",
+    "COUCHDB_PASSWORD=${local.cozy_db_password}",
+  ]
+
+  networks_advanced {
+    name = docker_network.internal_network.name
+  }
+
+  volumes {
+    volume_name    = docker_volume.cozy_db.name
+    container_path = "/opt/couchdb/data"
+  }
+}
+
+resource "docker_volume" "cozy_db" {
+  name = "cozy_db"
+}
+
+resource "random_string" "cozy_db_password" {
+  length  = 8
+  special = false
 }
 
 # Firefly

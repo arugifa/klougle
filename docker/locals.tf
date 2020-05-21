@@ -40,6 +40,9 @@ locals {
   cozy_admin_passphrase_filename = "cozy-admin-passphrase"
   cozy_admin_passphrase_file     = "${local.cozy_dir}/${local.cozy_admin_passphrase_filename}"
   cozy_credentials_key_filename  = "${local.cozy_dir}/credentials-key"
+
+  cozy_db_user     = "cozy"
+  cozy_db_password = random_string.cozy_db_password.result
 }
 
 # Firefly (Finance)

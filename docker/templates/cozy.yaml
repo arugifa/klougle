@@ -1,0 +1,95 @@
+# server host - flags: --host
+host: localhost
+# server port - flags: --port -p
+port: 8080
+
+# administration endpoint parameters. this endpoint should be protected
+admin:
+  # server host - flags: --admin-host
+  host: localhost
+  # server port - flags: --admin-port
+  port: 6060
+  # secret file name containing the derived passphrase to access to the
+  # administration endpoint. this secret file can be generated using the `cozy-
+  # stack config passwd` command. this file should be located in the same path
+  # as the configuration file.
+  secret_filename: ${secret_filename}
+
+# vault contains keyfiles informations
+# See https://docs.cozy.io/en/cozy-stack/cli/cozy-stack_config_gen-keys/
+# to generate the keys
+vault:
+  # the path to the key used to encrypt credentials
+  credentials_encryptor_key: ${credentials_key_filename}.enc
+  # the path to the key used to decrypt credentials
+  credentials_decryptor_key: ${credentials_key_filename}.dec
+
+# file system parameters
+fs:
+  # file system url - flags: --fs-url
+
+  url: swift://${swift_host}/?UserName={{ .Env.OS_USERNAME }}&Password={{ .Env.OS_PASSWORD }}&ProjectName={{ .Env.OS_PROJECT_NAME }}&UserDomainName={{ .Env.OS_USER_DOMAIN_NAME }}
+
+  # TODO: Activate TLS (05/2020)
+  # Swift FS can be used with advanced parameters to activate TLS properties.
+  # For using swift with https, you must use the "swift+https" scheme.
+  #
+  # root_ca: /ca-certificates.pem
+  # client_cert: /client_cert.pem
+  # client_key: /client_key
+  # pinned_key: 57c8ff33c9c0cfc3ef00e650a1cc910d7ee479a8bc509f6c9209a7c2a11399d6
+  # insecure_skip_validation: true
+  # can_query_info: true
+  default_layout: 2 # 1 for layout v2 and 2 for layout v3
+
+  versioning:
+    max_number_of_versions_to_keep: 3
+    min_delay_between_two_versions: 15m
+
+# couchdb parameters
+couchdb:
+  # CouchDB URL - flags: --couchdb-url
+  url: http://{{ .Env.COUCHDB_USER }}:{{{ .Env.COUCHDB_PASSWORD }}@${couchdb_host}:5984/
+
+# konnectors execution parameters for executing external processes.
+konnectors:
+  cmd: ./scripts/konnector-node-run.sh # run connectors with node
+  # cmd: ./scripts/konnector-rkt-run.sh # run connectors with rkt
+  # cmd: ./scripts/konnector-nsjail-node8-run.sh # run connectors with nsjail
+
+# mail service parameters for sending email via SMTP
+mail:
+  # mail noreply address - flags: --mail-noreply-address
+  noreply_address: noreply@${domain}
+  noreply_name: My Cozy
+  reply_to: support@{domain}
+  # mail smtp host - flags: --mail-host
+  host: ${smtp_host}
+  # mail smtp port - flags: --mail-port
+  port: 465
+  # mail smtp username - flags: --mail-username
+  username: {{.Env.COZY_MAIL_USERNAME}}
+  # mail smtp password - flags: --mail-password
+  password: {{.Env.COZY_MAIL_PASSWORD}}
+  # disable mail tls - flags: --mail-disable-tls
+  disable_tls: false
+  # skip the certificate validation (may be useful on localhost)
+  skip_certificate_validation: false
+
+# directory with the hooks scripts - flags: --hooks
+hooks: ./scripts/hooks
+
+# location of the database for IP -> City lookups - flags: --geodb
+# See https://dev.maxmind.com/geoip/geoip2/geolite2/
+geodb: ""
+
+# Registries used for applications and konnectors
+registries:
+  default:
+    - https://apps-registry.cozycloud.cc/
+
+log:
+  # logger level (debug, info, warning, panic, fatal) - flags: --log-level
+  level: info
+  # send logs to the local syslog - flags: --log-syslog
+  syslog: false
