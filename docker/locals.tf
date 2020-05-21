@@ -15,7 +15,9 @@ locals {
 locals {
   domain = replace(var.host, "/(\\w+\\.)(\\w+\\.)(\\w+)/", "$2$3")
 
+  # TODO: Enable Traefik dashboard after having installed Authelia (05/2020)
   domain_dashboard    = "dashboard.${local.domain}"
+  domain_drive        = "drive.${local.domain}"
   domain_finance      = "finance.${local.domain}"
   domain_library      = "library.${local.domain}"
   domain_news         = "news.${local.domain}"
@@ -27,6 +29,18 @@ locals {
 # ======================
 # Service Configurations
 # ======================
+
+# Cozy (Drive)
+# ============
+
+locals {
+  cozy_version = "1.4.12"
+
+  cozy_dir                       = "/var/lib/cozy"
+  cozy_admin_passphrase_filename = "cozy-admin-passphrase"
+  cozy_admin_passphrase_file     = "${local.cozy_dir}/${local.cozy_admin_passphrase_filename}"
+  cozy_credentials_key_filename  = "${local.cozy_dir}/credentials-key"
+}
 
 # Firefly (Finance)
 # =================

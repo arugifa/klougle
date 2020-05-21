@@ -1,6 +1,10 @@
-# =========================
-# Unversioned Docker Images
-# =========================
+# =================================
+# Partially Versioned Docker Images
+# =================================
+
+data "docker_registry_image" "couchdb" {
+  name = "couchdb:3"
+}
 
 data "docker_registry_image" "mysql" {
   name = "mysql:5"

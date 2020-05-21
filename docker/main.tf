@@ -173,6 +173,53 @@ resource "docker_volume" "traefik_certificates" {
 # Services
 # ========
 
+# Cozy
+# ====
+
+resource "docker_image" "cozy" {
+  name = "cozy/cozy-app-dev:${local.cozy_version}"
+}
+
+resource "docker_container" "cozy" {
+  image = docker_image.cozy.latest
+  name  = "cozy"
+  start = true
+
+  # Configuration
+
+  command = [
+    "/bin/sh", "-c",
+    "cozy-stack config passwd ${local.cozy_admin_passphrase_file} && cozy-stack config gen-keys ${local.cozy_credentials_key_filename}",
+  ]
+
+  env = [
+    "COZY_ADMIN_PASSPHRASE=${random_string.cozy_admin_passphrase}",
+    "OS_USERNAME=...",
+    "OS_PASSWORD=...",
+    "OS_PROJECT_NAME=...',
+    'OS_USER_DOMAIN_NAME=...",
+  ]
+
+  upload {
+    file = "/<TBD>"
+    content = templatefile(
+      "${path.module}/templates/cozy.yaml",
+      {
+        credentials_key_filename = local.cozy_credentials_key_filename,
+        domain                   = local.domain,
+        secret_filename          = local.cozy_admin_passphrase_filename,
+        couchdb_host             = "<TBD>",
+        smtp_host                = "<TBD>",
+        swift_host               = "<TBD>",
+      },
+    )
+  }
+}
+
+resource "random_string" "cozy_admin_passphrase" {
+  length = 16
+}
+
 # Firefly
 # =======
 

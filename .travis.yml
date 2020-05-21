@@ -17,6 +17,7 @@ jobs:
 
       addons:
         hosts:
+          - drive.localhost
           - finance.localhost
           - library.localhost
           - news.localhost

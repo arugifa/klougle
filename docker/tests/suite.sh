@@ -18,6 +18,7 @@ assert_service_is_online () {
     done
 }
 
+assert_service_is_online "Drive"                 "drive.localhost"
 assert_service_is_online "Finance"               "finance.localhost"
 
 # TODO: Test assets are correctly loaded (HTTP status code 200) (11/2019)

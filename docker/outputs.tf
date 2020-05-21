@@ -2,6 +2,10 @@
 # Passwords
 # =========
 
+output "cozy_admin_passphrase" {
+  value = random_string.cozy_admin_passphrase.result
+}
+
 output "firefly_db_password" {
   value = local.db_firefly_password
 }
