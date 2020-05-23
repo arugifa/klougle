@@ -267,7 +267,7 @@ But first, retrieve your very own personal
 ```sh
 CLOUD_FQDN=cloud.<YOUR_DOMAIN>
 
-docker --tls --tlscacert ~/.docker/klougle/ca.pem --tlscert ~/.docker/klougle/cert.pem --tlskey ~/.docker/klougle/key.pem -H $CLOUD_FQDN:2376 exec simplelogin cat /sl/dkim/dkim.pub.key
+docker --tlsverify --tlscacert ~/.docker/klougle/ca.pem --tlscert ~/.docker/klougle/cert.pem --tlskey ~/.docker/klougle/key.pem -H $CLOUD_FQDN:2376 exec simplelogin cat /sl/dkim/dkim.pub.key
 ```
 
 Then, add these new records to your DNS zone:
@@ -379,7 +379,7 @@ Make your account premium to have unlimited aliases:
 CLOUD_FQDN=cloud.<YOUR_DOMAIN>
 ALIAS_ACCOUNT=<SIMPLELOGIN_ACCOUNT_EMAIL>
 
-docker --tls --tlscacert ~/.docker/klougle/ca.pem --tlscert ~/.docker/klougle/cert.pem --tlskey ~/.docker/klougle/key.pem -H $CLOUD_FQDN:2376 exec simplelogin_db psql -U simplelogin -c "UPDATE users SET lifetime=TRUE WHERE email='$ALIAS_ACCOUNT';"
+docker --tlsverify --tlscacert ~/.docker/klougle/ca.pem --tlscert ~/.docker/klougle/cert.pem --tlskey ~/.docker/klougle/key.pem -H $CLOUD_FQDN:2376 exec simplelogin_db psql -U simplelogin -c "UPDATE users SET lifetime=TRUE WHERE email='$ALIAS_ACCOUNT';"
 ```
 
 #### Web Library
