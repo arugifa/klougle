@@ -330,7 +330,7 @@ resource "docker_image" "simplelogin" {
 }
 
 resource "docker_image" "simplelogin_postfix" {
-  name = "arugifa/simplelogin-postfix:${local.version_simplelogin}"
+  name = "arugifa/simplelogin-postfix:${local.version_simplelogin}-1"
 }
 
 resource "docker_container" "simplelogin" {
