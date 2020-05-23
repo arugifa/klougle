@@ -18,7 +18,8 @@ assert_service_is_online () {
     done
 }
 
-assert_service_is_online "Finance"               "finance.localhost"
+assert_service_is_online "Email Aliasing"  "alias.localhost"
+assert_service_is_online "Finance Manager" "finance.localhost"
 
 # TODO: Test assets are correctly loaded (HTTP status code 200) (11/2019)
 #
@@ -26,12 +27,12 @@ assert_service_is_online "Finance"               "finance.localhost"
 # environment variable is not set, then Wallabag uses a default
 # and incorrect base domain to generate asset URLs.
 #
-assert_service_is_online "Library"               "library.localhost"
+assert_service_is_online "Web Library"     "library.localhost"
 
-assert_service_is_online "News Reader"           "news.localhost"
+assert_service_is_online "News Reader"     "news.localhost"
 
 # TODO: Test communication between web UI and default server (10/2019)
-assert_service_is_online "Notes Web UI"          "notes.localhost"
-assert_service_is_online "Notes Server"          "sync.notes.localhost"
+assert_service_is_online "Notes Web UI"    "notes.localhost"
+assert_service_is_online "Notes Server"    "sync.notes.localhost"
 
-assert_service_is_online "Task Management Board" "tasks.localhost"
+assert_service_is_online "Task Board"      "tasks.localhost"

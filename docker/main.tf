@@ -348,7 +348,7 @@ resource "docker_container" "simplelogin" {
     # 2. Migrate database if needed.
     # 3. Start application server.
     "/bin/sh", "-c",
-    "[ ! -f ${local.sl_dkim_public_key} ] && mkdir ${local.sl_dkim_dir} && openssl genrsa -out ${local.sl_dkim_private_key} ${local.sl_dkim_key_length} && openssl rsa -in ${local.sl_dkim_private_key} -pubout -out ${local.sl_dkim_public_key}; mkdir ${local.sl_pgp_dir}; flask db upgrade && gunicorn wsgi:app -b 0.0.0.0:80",
+    "[ ! -f ${local.sl_dkim_public_key} ] && mkdir ${local.sl_dkim_dir} && openssl genrsa -out ${local.sl_dkim_private_key} ${local.sl_dkim_key_length} && openssl rsa -in ${local.sl_dkim_private_key} -pubout -out ${local.sl_dkim_public_key}; mkdir ${local.sl_pgp_dir}; flask db upgrade && gunicorn wsgi:app -b 0.0.0.0:7777",
   ]
 
   upload {
