@@ -15,6 +15,7 @@ locals {
 locals {
   domain = replace(var.host, "/(\\w+\\.)(\\w+\\.)(\\w+)/", "$2$3")
 
+  domain_alias        = "alias.${local.domain}"
   domain_dashboard    = "dashboard.${local.domain}"
   domain_finance      = "finance.${local.domain}"
   domain_library      = "library.${local.domain}"
@@ -68,6 +69,30 @@ locals {
   db_miniflux_password = random_string.miniflux_db_password.result
   db_miniflux_host     = "miniflux_db"
   db_miniflux_url      = "postgres://${local.db_miniflux_user}:${local.db_miniflux_password}@${local.db_miniflux_host}/${local.db_miniflux_database}?sslmode=disable"
+}
+
+# SimpleLogin (Email Aliases)
+# ===========================
+
+locals {
+  version_simplelogin  = "3.1.0"
+
+  mx_server = "mail.${local.domain}"
+
+  db_simplelogin_database = "simplelogin"
+  db_simplelogin_user     = "simplelogin"
+  db_simplelogin_password = random_string.simplelogin_db_password.result
+  db_simplelogin_host     = "simplelogin_db"
+  db_simplelogin_url      = "postgres://${local.db_simplelogin_user}:${local.db_simplelogin_password}@${local.db_simplelogin_host}/${local.db_simplelogin_database}"
+
+  sl_forwarder_host = "simplelogin_forwarder"
+  sl_postfix_host   = "simplelogin_postfix"
+
+  sl_dkim_dir         = "/sl/dkim"
+  sl_dkim_private_key = "${local.sl_dkim_dir}/dkim.key"
+  sl_dkim_public_key  = "${local.sl_dkim_dir}/dkim.pub.key"
+  sl_dkim_key_length  = 2048
+  sl_pgp_dir          = "/sl/pgp"
 }
 
 # Standard Notes (Notes)

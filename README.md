@@ -13,27 +13,24 @@ access to your very own secrets, then Kloügle is made for you!
 
 Currently, here is what you can expect to find in Kloügle:
 
-- a **note-taking** application ([Standard Notes](https://standardnotes.org/)),
-  like [Google Keep](https://keep.google.com/) or [Evernote](https://evernote.com/),
-- a **news** reader ([Miniflux](https://miniflux.app/)),
-  like [Google News](https://news.google.com/) or [Feedly](https://feedly.com/),
-- a web **library** ([Wallabag](https://wallabag.org/)),
-  like [Pocket](https://getpocket.com/),
-- a personal **task management** board ([Kanboard](https://kanboard.org/)),
-  like [Trello](https://trello.com/),
-- a personal **finance manager** ([Firefly](https://www.firefly-iii.org/)).
+Application | Replacement for | Notes
+----------- | --------------- | -----
+**Email Aliasing**\*\*\* ([SimpleLogin](https://simplelogin.io/)) | [Gmail](https://mail.google.com/) + [Mailvelope](https://www.mailvelope.com/) | Must be used with a secure email provider, like [ProtonMail](https://protonmail.com/)
+**Finance Manager** ([Firefly](https://www.firefly-iii.org/)) | | |
+**News Reader** ([Miniflux](https://miniflux.app/))| [Google News](https://news.google.com/), [Feedly](https://feedly.com/) |
+**Notes**\* ([Standard Notes](https://standardnotes.org/)) | [Google Keep](https://keep.google.com/), [Evernote](https://evernote.com/) |
+**Task Board** ([Kanboard](https://kanboard.org/)) | [Trello](https://trello.com/) |
+**Web Library** ([Wallabag](https://wallabag.org/)) | [Pocket](https://getpocket.com/) |
 
-That's all? Yep, for now! 😀 The main focus has been to build Kloügle's
-foundations so far. But the following services will be available during the
-next few months:
+\* application also available on smartphone,
+\*\* browser add-ons available
+
+The following services will also become available during the next few months:
 
 - a **file storage and synchronization** service,
   like [Google Drive](https://drive.google.com/) or [Dropbox](https://www.dropbox.com/),
 - a **calendar**, like [Google Calendar](https://calendar.google.com/),
-- a **webmail** with [PGP](https://en.wikipedia.org/wiki/Pretty_Good_Privacy) support,
-  like [Google Mail](https://mail.google.com/) + [Mailvelope](https://www.mailvelope.com/),
-- a **contact** management tool, like [Google Contacts](https://contacts.google.com/),
-- a **URL shortener**, like [goo.gl](https://goo.gl/).
+- a **contact** management tool, like [Google Contacts](https://contacts.google.com/).
 
 It is not my goal to reinvent the wheel: by carefully selecting a set of
 open-source softwares, Kloügle is able to provide you the simplest and most
@@ -108,8 +105,10 @@ records for every Kloügle service.
 
 As only a very few services are available for now, it's pretty simple:
 
+- `alias.<YOUR_DOMAIN>`
 - `finance.<YOUR_DOMAIN>`
 - `library.<YOUR_DOMAIN>`
+- `mail.<YOUR_DOMAIN>`
 - `news.<YOUR_DOMAIN>`
 - `notes.<YOUR_DOMAIN>`
 - `tasks.<YOUR_DOMAIN>`
@@ -121,7 +120,7 @@ However, if you only want to play with Kloügle locally, then the simplest optio
 is to update the `/etc/hosts` file of your machine. For example:
 
 ```ini
-127.0.0.1    finance.localhost news.localhost notes.localhost sync.notes.localhost tasks.localhost
+127.0.0.1    alias.localhost finance.localhost library.localhost mail.localhost news.localhost notes.localhost sync.notes.localhost tasks.localhost
 ```
 
 
@@ -257,6 +256,35 @@ terraform init
 terraform apply -var 'host=<SERVER_FQDN>' -var 'letsencrypt_email=<EMAIL_ADDRESS>'
 ```
 
+### Post-Deployment Actions
+
+In order to be able to send/receive emails from your new Cloud, you need to
+add a few more records to your DNS zone.
+
+But first, retrieve your very own personal
+[DKIM](https://en.wikipedia.org/wiki/DomainKeys_Identified_Mail) public key:
+
+```sh
+CLOUD_FQDN=cloud.<YOUR_DOMAIN>
+
+docker --tls --tlscacert ~/.docker/klougle/ca.pem --tlscert ~/.docker/klougle/cert.pem --tlskey ~/.docker/klougle/key.pem -H $CLOUD_FQDN:2376 exec simplelogin cat /sl/dkim/dkim.pub.key
+```
+
+Then, add these new records to your DNS zone:
+
+Type | Domain | Target | Description
+---- | ------ | ------ | -----------
+**DKIM**  | `dkim._domainkey.alias.<YOUR_DOMAIN>.` | `v=DKIM1;k=rsa;p=<DKIM_PUBLIC_KEY>;` | Expose your DKIM public key to the world.
+**MX**    | `alias.<YOUR_DOMAIN>.` | `mail.<YOUR_DOMAIN>.` | Email server for your aliases.
+**SPF**   | `alias.<YOUR_DOMAIN>.` | `v=spf1 mx -all` | Only your email server can send emails coming from `@alias.<YOUR_DOMAIN>`
+**DMARC** | `_dmarc.alias.<YOUR_DOMAIN>.` | `v=DMARC1;p=quarantine;` | Ask the world to mark as SPAM emails coming from your domain, but not sent from your email server.
+
+After having done that, you can go on [MxToolbox.com](https://mxtoolbox.com/)
+to check you properly configured your DNS records for `alias.<YOUR_DOMAIN>`.
+You should especially check that the IP address of your server is not
+blacklisted by global email providers. Otherwise, you will never receive emails
+forwarded from your Cloud 👎
+
 
 ### SSL Troubleshooting
 
@@ -273,6 +301,9 @@ unfortunately no choice but to migrate your zone to another provider...
 
 
 #### Rate Limits
+
+**Kloügle currenly has a known issue regarding SSL certificates generation and
+renewal. See [there](https://github.com/arugifa/klougle/issues/23) for more info.**
 
 If your browser keeps saying your SSL certificates are invalid when connecting
 to Kloügle services, you should probably wait first a couple of minutes, and
@@ -314,8 +345,9 @@ As Kloügle doesn't provide any central authentication system for the moment:
 
 For the following services, you have to create a new user by yourself:
 
+- **email aliasing:** `https://alias.<YOUR_DOMAIN>/auth/register`
 - **finance manager:** `https://finance.<YOUR_DOMAIN>/`
-- **notes application:** `https://notes.<YOUR_DOMAIN>/` (please update the server's
+- **notes:** `https://notes.<YOUR_DOMAIN>/` (please update the server's
   URL when trying to register/sign in with `https://sync.notes.<YOUR_DOMAIN>/`;
   by default, a fake one is used to prevent anyone to create accounts on your
   setup)
@@ -324,17 +356,38 @@ But for the following ones, here are the default credentials:
 
 - **web library:** `wallabag` / `wallabag` (`https://library.<YOUR_DOMAIN>/config#set4`)
 - **news reader:** `admin` / `password` (`https://news.<YOUR_DOMAIN>/settings`)
-- **task management:** `admin` / `admin` (`https://tasks.<YOUR_DOMAIN>/user/1/password`)
+- **task board:** `admin` / `admin` (`https://tasks.<YOUR_DOMAIN>/user/1/password`)
 
 
 ### Additional Configuration
 
-Unfortunately, the following services need to be configured manually via their
-web interface:
+A couple of services need to be configured after Kloügle installation.
 
-- **web library:**
-  - enable asynchronous imports with Redis (`https://library.<YOUR_DOMAIN>/settings#set-import`)
-  - enable local download of article images (`https://library.<YOUR_DOMAIN>/settings#set-misc`)
+
+#### Email Aliasing
+
+**If you didn't receive an email to activate your email aliasing account, it
+means you either didn't configure properly your DNS zone, or your server's IP
+address is blacklisted by your email provider. You should fix that first before
+creating aliases and registering with them on other websites. You can use
+[MxToolbox.com](https://mxtoolbox.com/) to help you troubleshooting this
+problem.**
+
+Make your account premium to have unlimited aliases:
+
+```sh
+CLOUD_FQDN=cloud.<YOUR_DOMAIN>
+ALIAS_ACCOUNT=<SIMPLELOGIN_ACCOUNT_EMAIL>
+
+docker --tls --tlscacert ~/.docker/klougle/ca.pem --tlscert ~/.docker/klougle/cert.pem --tlskey ~/.docker/klougle/key.pem -H $CLOUD_FQDN:2376 exec simplelogin_db psql -U simplelogin -c "UPDATE users SET lifetime=TRUE WHERE email='$ALIAS_ACCOUNT';"
+```
+
+#### Web Library
+
+You should:
+
+- enable asynchronous imports with Redis (`https://library.<YOUR_DOMAIN>/settings#set-import`)
+- enable local download of article images (`https://library.<YOUR_DOMAIN>/settings#set-misc`)
 
 
 ## Contributing

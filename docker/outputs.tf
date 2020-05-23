@@ -14,6 +14,10 @@ output "miniflux_db_password" {
   value = local.db_miniflux_password
 }
 
+output "simplelogin_db_password" {
+  value = local.db_simplelogin_password
+}
+
 output "standardnotes_db_password" {
   value = local.db_standardnotes_password
 }
