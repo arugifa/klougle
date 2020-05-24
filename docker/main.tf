@@ -114,7 +114,6 @@ resource "docker_container" "traefik_https" {
     # Configure HTTP.
     "--entrypoints.http=true",
     "--entrypoints.http.address=:80",
-    "--entrypoints.http.http.redirections.entrypoint.to=https",
 
     # Configure HTTPs.
     "--entrypoints.https=true",
@@ -138,7 +137,7 @@ resource "docker_container" "traefik_https" {
   }
 
   volumes {
-    volume_name    = docker_volume.traefik_certificates.name
+    volume_name    = docker_volume.traefik_tls.name
     container_path = "/etc/traefik/acme"
   }
 
@@ -166,8 +165,8 @@ resource "docker_container" "traefik_https" {
   }
 }
 
-resource "docker_volume" "traefik_certificates" {
-  name = "traefik_certificates"
+resource "docker_volume" "traefik_tls" {
+  name = "traefik_tls"
 }
 
 # ========
@@ -226,22 +225,42 @@ resource "docker_container" "firefly" {
   }
 
   labels {
-    label = "traefik.http.routers.finance.rule"
+    label = "traefik.http.routers.finance_http.rule"
     value = "Host(`${local.domain_finance}`)"
   }
 
   labels {
-    label = "traefik.http.routers.finance.entrypoints"
+    label = "traefik.http.routers.finance_http.entrypoints"
+    value = "http"
+  }
+
+  labels {
+    label = "traefik.http.middlewares.https-redirect.redirectscheme.scheme"
     value = "https"
   }
 
   labels {
-    label = "traefik.http.routers.finance.tls"
+    label = "traefik.http.routers.finance_http.middlewares"
+    value = "https-redirect"
+  }
+
+  labels {
+    label = "traefik.http.routers.finance_https.rule"
+    value = "Host(`${local.domain_finance}`)"
+  }
+
+  labels {
+    label = "traefik.http.routers.finance_https.entrypoints"
+    value = "https"
+  }
+
+  labels {
+    label = "traefik.http.routers.finance_https.tls"
     value = "true"
   }
 
   labels {
-    label = "traefik.http.routers.finance.tls.certresolver"
+    label = "traefik.http.routers.finance_https.tls.certresolver"
     value = "letsencrypt"
   }
 }
@@ -298,22 +317,42 @@ resource "docker_container" "kanboard" {
   }
 
   labels {
-    label = "traefik.http.routers.tasks.rule"
+    label = "traefik.http.routers.tasks_http.rule"
     value = "Host(`${local.domain_tasks}`)"
   }
 
   labels {
-    label = "traefik.http.routers.tasks.entrypoints"
+    label = "traefik.http.routers.tasks_http.entrypoints"
+    value = "http"
+  }
+
+  labels {
+    label = "traefik.http.middlewares.https-redirect.redirectscheme.scheme"
     value = "https"
   }
 
   labels {
-    label = "traefik.http.routers.tasks.tls"
+    label = "traefik.http.routers.tasks_http.middlewares"
+    value = "https-redirect"
+  }
+
+  labels {
+    label = "traefik.http.routers.tasks_https.rule"
+    value = "Host(`${local.domain_tasks}`)"
+  }
+
+  labels {
+    label = "traefik.http.routers.tasks_https.entrypoints"
+    value = "https"
+  }
+
+  labels {
+    label = "traefik.http.routers.tasks_https.tls"
     value = "true"
   }
 
   labels {
-    label = "traefik.http.routers.tasks.tls.certresolver"
+    label = "traefik.http.routers.tasks_https.tls.certresolver"
     value = "letsencrypt"
   }
 }
@@ -330,7 +369,7 @@ resource "docker_image" "simplelogin" {
 }
 
 resource "docker_image" "simplelogin_postfix" {
-  name = "arugifa/simplelogin-postfix:${local.version_simplelogin}-1"
+  name = "arugifa/simplelogin-postfix:${local.version_simplelogin}-2"
 }
 
 resource "docker_container" "simplelogin" {
@@ -388,22 +427,42 @@ resource "docker_container" "simplelogin" {
   }
 
   labels {
-    label = "traefik.http.routers.aliases.rule"
+    label = "traefik.http.routers.alias_http.rule"
     value = "Host(`${local.domain_alias}`)"
   }
 
   labels {
-    label = "traefik.http.routers.aliases.entrypoints"
+    label = "traefik.http.routers.alias_http.entrypoints"
+    value = "http"
+  }
+
+  labels {
+    label = "traefik.http.middlewares.https-redirect.redirectscheme.scheme"
     value = "https"
   }
 
   labels {
-    label = "traefik.http.routers.aliases.tls"
+    label = "traefik.http.routers.alias_http.middlewares"
+    value = "https-redirect"
+  }
+
+  labels {
+    label = "traefik.http.routers.alias_https.rule"
+    value = "Host(`${local.domain_alias}`)"
+  }
+
+  labels {
+    label = "traefik.http.routers.alias_https.entrypoints"
+    value = "https"
+  }
+
+  labels {
+    label = "traefik.http.routers.alias_https.tls"
     value = "true"
   }
 
   labels {
-    label = "traefik.http.routers.aliases.tls.certresolver"
+    label = "traefik.http.routers.alias_https.tls.certresolver"
     value = "letsencrypt"
   }
 }
@@ -458,6 +517,8 @@ resource "docker_container" "simplelogin_postfix" {
   # Always restart container to not loose any incoming email.
   restart = "on-failure"
 
+  # Configuration
+
   env = [
     "ALIASES_DEFAULT_DOMAIN=${local.domain_alias}",
     "DB_HOST=${local.db_simplelogin_host}",
@@ -465,8 +526,14 @@ resource "docker_container" "simplelogin_postfix" {
     "DB_PASSWORD=${local.db_simplelogin_password}",
     "DB_NAME=${local.db_simplelogin_database}",
     "EMAIL_HANDLER_HOST=${local.sl_forwarder_host}",
+    "LETSENCRYPT_EMAIL=${var.letsencrypt_email}",
     "POSTFIX_FQDN=${local.mx_server}",
   ]
+
+  volumes {
+    volume_name    = docker_volume.simplelogin_postfix_tls.name
+    container_path = "/etc/letsencrypt/live"
+  }
 
   # Networking
 
@@ -484,10 +551,36 @@ resource "docker_container" "simplelogin_postfix" {
     # To connect with other containers.
     name = docker_network.internal_network.name
   }
+
+  # Reverse Proxy (to generate TLS certificate with Let's Encrypt)
+
+  labels {
+    label = "traefik.enable"
+    value = "true"
+  }
+
+  labels {
+    label = "traefik.http.routers.mx_server.rule"
+    value = "Host(`${local.mx_server}`)"
+  }
+
+  labels {
+    label = "traefik.http.routers.mx_server.entrypoints"
+    value = "http"
+  }
+
+  labels {
+    label = "traefik.http.services.mx_server.loadbalancer.server.port"
+    value = "80"
+  }
 }
 
 resource "docker_volume" "simplelogin_data" {
   name = "simplelogin_data"
+}
+
+resource "docker_volume" "simplelogin_postfix_tls" {
+  name = "postfix_tls"
 }
 
 resource "random_string" "simplelogin_secret_key" {
@@ -540,22 +633,42 @@ resource "docker_container" "miniflux" {
   }
 
   labels {
-    label = "traefik.http.routers.news.rule"
+    label = "traefik.http.routers.news_http.rule"
     value = "Host(`${local.domain_news}`)"
   }
 
   labels {
-    label = "traefik.http.routers.news.entrypoints"
+    label = "traefik.http.routers.news_http.entrypoints"
+    value = "http"
+  }
+
+  labels {
+    label = "traefik.http.middlewares.https-redirect.redirectscheme.scheme"
     value = "https"
   }
 
   labels {
-    label = "traefik.http.routers.news.tls"
+    label = "traefik.http.routers.news_http.middlewares"
+    value = "https-redirect"
+  }
+
+  labels {
+    label = "traefik.http.routers.news_https.rule"
+    value = "Host(`${local.domain_news}`)"
+  }
+
+  labels {
+    label = "traefik.http.routers.news_https.entrypoints"
+    value = "https"
+  }
+
+  labels {
+    label = "traefik.http.routers.news_https.tls"
     value = "true"
   }
 
   labels {
-    label = "traefik.http.routers.news.tls.certresolver"
+    label = "traefik.http.routers.news_https.tls.certresolver"
     value = "letsencrypt"
   }
 }
@@ -592,22 +705,42 @@ resource "docker_container" "standardnotes_web" {
   }
 
   labels {
-    label = "traefik.http.routers.notes_webui.rule"
+    label = "traefik.http.routers.notes_webui_http.rule"
     value = "Host(`${local.domain_notes_webui}`)"
   }
 
   labels {
-    label = "traefik.http.routers.notes_webui.entrypoints"
+    label = "traefik.http.routers.notes_webui_http.entrypoints"
+    value = "http"
+  }
+
+  labels {
+    label = "traefik.http.middlewares.https-redirect.redirectscheme.scheme"
     value = "https"
   }
 
   labels {
-    label = "traefik.http.routers.notes_webui.tls"
+    label = "traefik.http.routers.notes_webui_http.middlewares"
+    value = "https-redirect"
+  }
+
+  labels {
+    label = "traefik.http.routers.notes_webui_https.rule"
+    value = "Host(`${local.domain_notes_webui}`)"
+  }
+
+  labels {
+    label = "traefik.http.routers.notes_webui_https.entrypoints"
+    value = "https"
+  }
+
+  labels {
+    label = "traefik.http.routers.notes_webui_https.tls"
     value = "true"
   }
 
   labels {
-    label = "traefik.http.routers.notes_webui.tls.certresolver"
+    label = "traefik.http.routers.notes_webui_https.tls.certresolver"
     value = "letsencrypt"
   }
 }
@@ -662,22 +795,42 @@ resource "docker_container" "standardnotes_server" {
   }
 
   labels {
-    label = "traefik.http.routers.notes_server.rule"
+    label = "traefik.http.routers.notes_server_http.rule"
     value = "Host(`${local.domain_notes_server}`)"
   }
 
   labels {
-    label = "traefik.http.routers.notes_server.entrypoints"
+    label = "traefik.http.routers.notes_server_http.entrypoints"
+    value = "http"
+  }
+
+  labels {
+    label = "traefik.http.middlewares.https-redirect.redirectscheme.scheme"
     value = "https"
   }
 
   labels {
-    label = "traefik.http.routers.notes_server.tls"
+    label = "traefik.http.routers.notes_server_http.middlewares"
+    value = "https-redirect"
+  }
+
+  labels {
+    label = "traefik.http.routers.notes_server_https.rule"
+    value = "Host(`${local.domain_notes_server}`)"
+  }
+
+  labels {
+    label = "traefik.http.routers.notes_server_https.entrypoints"
+    value = "https"
+  }
+
+  labels {
+    label = "traefik.http.routers.notes_server_https.tls"
     value = "true"
   }
 
   labels {
-    label = "traefik.http.routers.notes_server.tls.certresolver"
+    label = "traefik.http.routers.notes_server_https.tls.certresolver"
     value = "letsencrypt"
   }
 
@@ -780,22 +933,42 @@ resource "docker_container" "wallabag" {
   }
 
   labels {
-    label = "traefik.http.routers.library.rule"
+    label = "traefik.http.routers.library_http.rule"
     value = "Host(`${local.domain_library}`)"
   }
 
   labels {
-    label = "traefik.http.routers.library.entrypoints"
+    label = "traefik.http.routers.library_http.entrypoints"
+    value = "http"
+  }
+
+  labels {
+    label = "traefik.http.middlewares.https-redirect.redirectscheme.scheme"
     value = "https"
   }
 
   labels {
-    label = "traefik.http.routers.library.tls"
+    label = "traefik.http.routers.library_http.middlewares"
+    value = "https-redirect"
+  }
+
+  labels {
+    label = "traefik.http.routers.library_https.rule"
+    value = "Host(`${local.domain_library}`)"
+  }
+
+  labels {
+    label = "traefik.http.routers.library_https.entrypoints"
+    value = "https"
+  }
+
+  labels {
+    label = "traefik.http.routers.library_https.tls"
     value = "true"
   }
 
   labels {
-    label = "traefik.http.routers.library.tls.certresolver"
+    label = "traefik.http.routers.library_https.tls.certresolver"
     value = "letsencrypt"
   }
 }
