@@ -369,7 +369,7 @@ resource "docker_image" "simplelogin" {
 }
 
 resource "docker_image" "simplelogin_postfix" {
-  name = "arugifa/simplelogin-postfix:${local.version_simplelogin}-2"
+  name = "arugifa/simplelogin-postfix:${local.version_simplelogin}-4"
 }
 
 resource "docker_container" "simplelogin" {
@@ -532,7 +532,7 @@ resource "docker_container" "simplelogin_postfix" {
 
   volumes {
     volume_name    = docker_volume.simplelogin_postfix_tls.name
-    container_path = "/etc/letsencrypt/live"
+    container_path = "/etc/letsencrypt"
   }
 
   # Networking
