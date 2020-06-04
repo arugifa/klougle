@@ -2,8 +2,11 @@
 
 [![Build Status](https://travis-ci.org/arugifa/klougle.svg?branch=master)](https://travis-ci.org/arugifa/klougle)
 
-**Kloügle** offers you to host, on your own server, a range of services
-traditionally provided by web companies like **Google**.
+**Kloügle** is an opiniated open-source Cloud platform, made for individuals
+or families, and automated with [Terraform](https://www.terraform.io/).
+
+It offers you to host, on your own server, a range of services traditionally
+provided by web companies like **Google**.
 
 If you care about your privacy, and think that nobody else should be able to
 access to your very own secrets, then Kloügle is made for you!
