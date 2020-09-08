@@ -16,12 +16,12 @@ access to your very own secrets, then Kloügle is made for you!
 
 Currently, here is what you can expect to find in Kloügle:
 
-Application | Replacement for | Notes
------------ | --------------- | -----
-**Email Aliasing**\*\*\* ([SimpleLogin](https://simplelogin.io/)) | [Gmail](https://mail.google.com/) + [Mailvelope](https://www.mailvelope.com/) | Must be used with a secure email provider, like [ProtonMail](https://protonmail.com/)
-**Finance Manager** ([Firefly](https://www.firefly-iii.org/)) | | |
+Application | Replacement for
+----------- | ---------------
+**Finance Manager** ([Firefly](https://www.firefly-iii.org/)) | |
 **News Reader** ([Miniflux](https://miniflux.app/))| [Google News](https://news.google.com/), [Feedly](https://feedly.com/) |
 **Notes**\* ([Standard Notes](https://standardnotes.org/)) | [Google Keep](https://keep.google.com/), [Evernote](https://evernote.com/) |
+**Spam Filtering**\*\*\* ([SimpleLogin](https://simplelogin.io/)) | |
 **Task Board** ([Kanboard](https://kanboard.org/)) | [Trello](https://trello.com/) |
 **Web Library** ([Wallabag](https://wallabag.org/)) | [Pocket](https://getpocket.com/) |
 
