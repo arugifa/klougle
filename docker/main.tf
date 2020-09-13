@@ -251,10 +251,10 @@ resource "docker_volume" "firefly_data" {
 }
 
 resource "random_string" "firefly_secret_key" {
-  # They say in the documentation: "It should be a random string of exactly 32 characters"
+  # It is said in the documentation: "should be a random string of exactly 32 characters".
   length = 32
 
-  # Web framework don't like special characters usually.
+  # Web frameworks don't like special characters usually.
   special = false
 }
 
